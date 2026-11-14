@@ -11,6 +11,12 @@ app_config_language_profiles: []
 #  - name: NL
 #    languages:
 #      - Dutch
+#    # Optional: qualities this profile accepts on top of the main one's (names as in the profile,
+#    # e.g. for languages that mostly come as DVD rips)
+#    qualities:
+#      - DVD
+#      - HDTV-720p
+#      - WEB 720p
 
 # https://trash-guides.info/Downloaders/qBittorrent/
 app_config_qbittorrent_preferences:
