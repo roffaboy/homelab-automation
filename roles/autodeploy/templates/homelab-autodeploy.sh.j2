@@ -67,7 +67,7 @@ done)
 log=$(mktemp)
 trap 'rm -f "$log"' EXIT
 $force && [ -z "$changes" ] && changes="• back to main"
-notify "🔄 <b>Update started</b>
+notify "🔄 <b>Updating</b>
 ${changes}"
 
 # Only new images can change the app data, so only then back up. The apps are stopped
@@ -101,8 +101,7 @@ Uncommitted changes in ~/homelab-config"
 fi
 if deploy; then
   rm -f .failed-commit
-  notify "✅ <b>Updated to <a href=\"$web/commit/$new\">$(version HEAD)</a></b> in $((SECONDS / 60))m $((SECONDS % 60))s
-${changes}"
+  notify "✅ <b>Updated to <a href=\"$web/commit/$new\">$(version HEAD)</a></b> in $((SECONDS / 60))m $((SECONDS % 60))s"
   exit 0
 fi
 
