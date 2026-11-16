@@ -15,7 +15,7 @@ contactPoints:
           # Like the other messages: an icon and a bold first line, then the details.
           message: |-
             {{ if eq .Status "firing" }}⚠️{{ else }}✅{{ end }} <b>{{ .CommonLabels.alertname }}{{ if eq .Status "resolved" }}: resolved{{ end }}</b>
-            {{ .CommonAnnotations.summary }}
+            {{ .CommonAnnotations.summary }} · <a href="{{ .ExternalURL }}/alerting/list">Grafana</a>
 
 policies:
   - orgId: 1
