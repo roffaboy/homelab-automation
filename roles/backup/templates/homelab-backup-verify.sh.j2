@@ -38,10 +38,7 @@ done < <(find "$work" -name '*.db' -print0)
 [ -z "$bad" ] || fail "damaged databases in the backup:$bad"
 echo "Verified: $checked databases ok, $skipped skipped"
 latest=$(restic snapshots --latest 1 --tag nightly --json 2>/dev/null | grep -o '"time":"[^"]*"' | head -1 | cut -d'"' -f4)
-notify "✅ <b>Backup verified</b>
-🗄 <b>Databases</b>  $checked ok$([ "$skipped" -gt 0 ] && echo " · $skipped skipped")
-🔍 <b>Data read</b>  {{ backup_verify_data_percent }}%
-☁️ <b>Latest backup</b>  $(date -d "${latest:-now}" '+%-d %b %R')"
+notify "✅ <b>Backup verified</b> · $checked databases ok$([ "$skipped" -gt 0 ] && echo ", $skipped skipped") · latest $(date -d "${latest:-now}" '+%-d %b %R')"
 {% if homelab_monitoring | bool %}
 
 # Read by node-exporter, from its own file: the backup script rewrites homelab.prom every night.
