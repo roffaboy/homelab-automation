@@ -70,7 +70,18 @@
   check_mode: false
   no_log: true
 
-# The copy has the main profile's qualities and scores, except for languages: any other language
+- name: Language profile | Check the quality names
+  vars:
+    _main: "{{ _app_config_profiles.json | selectattr('name', 'equalto', app_config_quality_profile) | first }}"
+    _names: "{{ _main['items'] | map(attribute='name', default='') | zip(_main['items'] | map(attribute='quality.name', default='')) | map('join') | list }}"
+  ansible.builtin.assert:
+    that: item in _names
+    fail_msg: >-
+      "{{ item }}" is not a quality of {{ _app_config_arr.name }}. Use one of: {{ _names | select | join(', ') }}
+    quiet: true
+  loop: "{{ _app_config_lang.qualities | default([]) }}"
+
+# The copy has the main profile's qualities (plus the ones the language profile adds) and scores, except for languages: any other language
 # custom format (TRaSH's "Not Original" in Sonarr) goes to 0, ours is set. Radarr also has the
 # language in the profile itself: Any, because TRaSH says it can't be combined with the formats.
 - name: Language profile | The copy of the main profile
@@ -90,9 +101,17 @@
       {%- set _ = out.append({'format': f.id, 'name': f.name, 'score': _scores.get(f.name, 0)}) -%}
       {%- endfor -%}
       {{- out }}
+    _extra: "{{ _app_config_lang.qualities | default([]) }}"
+    _items: >-
+      {%- set out = [] -%}
+      {%- for q in _main['items'] -%}
+      {%- set name = q.name if q.name is defined else q.quality.name -%}
+      {%- set _ = out.append(q | combine({'allowed': true}) if name in _extra else q) -%}
+      {%- endfor -%}
+      {{- out }}
     _language: "{{ {'language': {'id': -1, 'name': 'Any'}} if _app_config_arr.name == 'radarr' else {} }}"
     _copied: >-
-      {{ _main | dict2items | rejectattr('key', 'in', ['id', 'name', 'formatItems', 'language'])
+      {{ _main | dict2items | rejectattr('key', 'in', ['id', 'name', 'items', 'formatItems', 'language'])
          | items2dict }}
   servarr_resource:
     url: "{{ app_config_urls[_app_config_arr.name] }}"
@@ -100,4 +119,4 @@
     endpoint: qualityprofile
     body: >-
       {{ _copied | combine(_language, {'name': app_config_quality_profile ~ ' - ' ~ _app_config_lang.name,
-                                       'formatItems': _format_items}) }}
+                                       'items': _items, 'formatItems': _format_items}) }}
