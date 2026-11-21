@@ -22,6 +22,10 @@ homelab_tailscale: true
 #   - name: NL
 #     languages:
 #       - Dutch
+#     qualities:   # optional, on top of the main profile's: Dutch mostly comes as DVD rips
+#       - DVD
+#       - HDTV-720p
+#       - WEB 720p
 # The country Jellyfin uses for ratings and release dates (default US), e.g.:
 # app_config_jellyfin_country: NL
 # Seerr: discover movies and series in these original languages, and show where they stream:
