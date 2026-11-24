@@ -20,7 +20,7 @@
 # Holyfin (github.com/roffaboy/holyfin) is a dark and a light theme in the look of HolyArrs; which
 # one shows is Jellyfin's own Theme setting (homelab_jellyfin_theme in settings.yml sets the default):
 # app_config_jellyfin_css: |
-#   @import url("https://cdn.jsdelivr.net/gh/roffaboy/holyfin@v0.1.0/theme.css");
+#   @import url("https://cdn.jsdelivr.net/gh/roffaboy/holyfin@v0.2.0/theme.css");
 
 # Plugins from Jellyfin's catalog (Dashboard, Plugins, Catalog), by name; installed when missing.
 # By default Intro Skipper and Jellyfin Enhanced, plus Simkl with vault_simkl_client_id: log in
