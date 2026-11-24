@@ -176,3 +176,15 @@ li.service .h-5 {
 li.service .h-5 > * {
   background: transparent !important;
 }
+
+/* The numbers in each tile two by two, so the tiles come out about square. */
+.service-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* At most 5 rows of the Radarr and Sonarr queues; the QUEUED count above shows the total.
+   A row is hidden when 5 rows come before it. */
+.service-container ~ .h-5.m-1 ~ .h-5.m-1 ~ .h-5.m-1 ~ .h-5.m-1 ~ .h-5.m-1 ~ .h-5.m-1 {
+  display: none;
+}
