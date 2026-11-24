@@ -2,11 +2,13 @@
 # One Pick rules set for one kind (movies or series) and one language profile, as Radarr and Sonarr
 # have it: made when missing, then TRaSH's scores go in. Included once per pair by holyarrs.yml.
 - name: HolyArrs rules | Work out the set
+  vars:
+    _suffix: "{{ ' - ' ~ _app_config_hs_pair.1.name if _app_config_hs_pair.1.name else '' }}"
+    _label: "{{ app_config_holyarrs_trash[_app_config_hs_pair.0].label }}"
   ansible.builtin.set_fact:
-    _app_config_hs_name: >-
-      {{ _app_config_hs_pair.1.full | default(app_config_quality_profile
-         ~ (' - ' ~ _app_config_hs_pair.1.name if _app_config_hs_pair.1.name else '')) }}
-      ({{ app_config_holyarrs_trash[_app_config_hs_pair.0].label }})
+    # One line: a folded value keeps the line break before a more indented line, and the name
+    # would hold it.
+    _app_config_hs_name: "{{ _app_config_hs_pair.1.full | default(app_config_quality_profile ~ _suffix) ~ ' (' ~ _label ~ ')' }}"
     _app_config_hs_allowed: >-
       {{ app_config_holyarrs_ladder | select('in',
            (app_config_recyclarr_uhd_qualities if _app_config_hs_pair.1.full is defined else
