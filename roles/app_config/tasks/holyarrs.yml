@@ -179,6 +179,33 @@
   changed_when: true
   no_log: true
 
+# HolyArrs adds itself to Prowlarr as an app, which Prowlarr refuses when an app of that name is
+# still there (HolyArrs answers 502): what an earlier HolyArrs left behind after its data was wiped.
+# Those are removed first; Radarr and Sonarr are never touched.
+- name: HolyArrs | Read the apps in Prowlarr
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.prowlarr }}/api/v1/applications"
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys.prowlarr }}"
+  register: _app_config_hs_prowlarr_apps
+  when:
+    - app_config_holyarrs_link_prowlarr | bool
+    - "'prowlarr' not in _app_config_hs.bridges.bridges | map(attribute='kind')"
+  check_mode: false
+  no_log: true
+
+- name: HolyArrs | Remove the apps an earlier HolyArrs left in Prowlarr
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.prowlarr }}/api/v1/applications/{{ item.id }}"
+    method: DELETE
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys.prowlarr }}"
+  loop: "{{ _app_config_hs_prowlarr_apps.json | default([]) | selectattr('name', 'match', '^HolyArrs') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: _app_config_hs_prowlarr_apps.json is defined
+  changed_when: true
+
 # Prowlarr pushes its indexers to HolyArrs, which is added to Prowlarr as an app.
 - name: HolyArrs | Prowlarr
   ansible.builtin.uri:
@@ -204,11 +231,10 @@
 - name: HolyArrs | Pick rules
   ansible.builtin.include_tasks: holyarrs_rules.yml
   loop: >-
-    {{ ['movie', 'show'] | product([{'name': ''}] + app_config_language_profiles) | list
-       + ([['movie', {'name': '', 'full': app_config_recyclarr_uhd_profile}]] if app_config_recyclarr_uhd | bool else []) }}
+    {{ ['movie', 'show'] | product([{'name': ''}] + app_config_language_profiles) | list }}
   loop_control:
     loop_var: _app_config_hs_pair
-    label: "{{ _app_config_hs_pair.0 }}: {{ _app_config_hs_pair.1.full | default(_app_config_hs_pair.1.name or app_config_quality_profile) }}"
+    label: "{{ _app_config_hs_pair.0 }}: {{ _app_config_hs_pair.1.name or app_config_quality_profile }}"
 
 - name: HolyArrs | Read the Pick rules again
   ansible.builtin.uri:

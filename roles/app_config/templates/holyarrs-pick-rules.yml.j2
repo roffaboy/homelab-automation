@@ -1,19 +1,16 @@
 # Body of one HolyArrs Pick rules set, from the same choices as Recyclarr's profile: the qualities
-# of app_config_recyclarr_small_qualities (plus the language profile's), the sizes in MB per minute
-# (app_config_recyclarr_sizes, movies and series apart),
+# of app_config_recyclarr_small_qualities (plus the language profile's), the sizes in MB per minute,
 # and for a language only releases in that language. The scores come from TRaSH afterwards.
 {% set mb = 1048576 %}
-{% set sizes = app_config_recyclarr_sizes['movie' if _app_config_hs_pair.0 == 'movie' else 'series'] %}
-{% set best = '2160p' if '2160p_web' in _app_config_hs_allowed else '1080p' %}
 steps:
 {% for q in app_config_holyarrs_ladder %}
   - quality: {{ q }}
     allowed: {{ (q in _app_config_hs_allowed) | lower }}
 {% endfor %}
-good_enough_at: {{ best }}_web
+good_enough_at: 1080p_web
 equal_steps:
-  - - {{ best }}_web
-    - {{ best }}_bluray
+  - - 1080p_web
+    - 1080p_bluray
 traits: []
 must_have: []
 never:
@@ -36,8 +33,8 @@ size_limits:
     max: {{ 100 * mb }}
 {% else %}
     min: {{ (0 if app_config_recyclarr_block_x265_hd | bool else app_config_recyclarr_x265_min_size) * mb }}
-    preferred: {{ sizes['preferred_2160p' if q.startswith('2160p') else 'preferred'] * mb }}
-    max: {{ sizes.max[q.split('_')[0]] * mb }}
+    preferred: {{ app_config_recyclarr_preferred_size * mb }}
+    max: {{ app_config_recyclarr_max_size['1080p' if q.startswith('1080p') else '720p'] * mb }}
 {% endif %}
 {% endfor %}
 protocol:

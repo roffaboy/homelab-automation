@@ -4,17 +4,16 @@
 #   radarr: hd-bluray-web            https://trash-guides.info/Radarr/radarr-setup-quality-profiles/#hd-bluray-web
 #   sonarr: web-1080p-alternative    https://trash-guides.info/Sonarr/sonarr-setup-quality-profiles/
 # The main profile is named {{ app_config_quality_profile }} (the Seerr default). The WEB-only
-# profile is a smaller choice, and with app_config_recyclarr_uhd a 2160p one for movies. No Remux
-# profiles: those files are 20-80 GB.
-{% macro sizes(kind, extra=[]) %}
+# profile is a smaller choice. No Remux or 2160p profiles: those files are 20-80 GB.
+{% macro sizes() %}
       qualities:
-{% for q in app_config_recyclarr_small_qualities + extra %}
+{% for q in app_config_recyclarr_small_qualities %}
         - name: {{ q }}
 {% if not app_config_recyclarr_block_x265_hd | bool %}
           min: {{ app_config_recyclarr_x265_min_size }}
 {% endif %}
-          preferred: {{ app_config_recyclarr_sizes[kind]['preferred_2160p' if '2160p' in q else 'preferred'] }}
-          max: {{ app_config_recyclarr_sizes[kind].max['2160p' if '2160p' in q else ('1080p' if '1080p' in q else '720p')] }}
+          preferred: {{ app_config_recyclarr_preferred_size }}
+          max: {{ app_config_recyclarr_max_size['1080p' if '1080p' in q else '720p'] }}
 {% endfor %}
 {% endmacro %}
 
@@ -26,7 +25,7 @@ radarr:
 
     quality_definition:
       type: movie
-{{ sizes('movie', app_config_recyclarr_uhd_qualities if app_config_recyclarr_uhd | bool else []) }}
+{{ sizes() }}
     quality_profiles:
       - trash_id: d1d67249d3890e49bc12e275d989a7e9  # HD Bluray + WEB
         name: {{ app_config_quality_profile }}
@@ -39,14 +38,6 @@ radarr:
           enabled: true
         upgrade:
           allowed: {{ app_config_recyclarr_upgrades | bool | lower }}
-{% if app_config_recyclarr_uhd | bool %}
-      - trash_id: {{ app_config_trash_uhd_profile }}  # UHD Bluray + WEB: 2160p only
-        name: {{ app_config_recyclarr_uhd_profile }}
-        reset_unmatched_scores:
-          enabled: true
-        upgrade:
-          allowed: {{ app_config_recyclarr_upgrades | bool | lower }}
-{% endif %}
 
     custom_format_groups:
       add:
@@ -72,7 +63,7 @@ sonarr:
 
     quality_definition:
       type: series
-{{ sizes('series') }}
+{{ sizes() }}
     quality_profiles:
       - trash_id: 9d142234e45d6143785ac55f5a9e8dc9  # WEB-1080p (Alternative): WEB + Bluray 720p/1080p
         name: {{ app_config_quality_profile }}
