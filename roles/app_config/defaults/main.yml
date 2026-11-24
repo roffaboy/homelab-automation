@@ -206,19 +206,20 @@ app_config_recyclarr_upgrades: true
 app_config_recyclarr_x265_min_size: 4
 # File size in MB per minute of video; releases above the max are skipped. A size belongs to a
 # quality, so a profile that allows it shares it with every other profile.
-#   movies: max 120 is ~14 GB for a 2-hour movie at 1080p or 2160p, 60 is ~7 GB at 720p.
+#   movies: max 85 is ~10 GB for a 2-hour movie at 1080p or 2160p (a 3-hour one gets ~15 GB, a
+#           90-minute one ~7.5 GB), 50 is ~6 GB at 720p.
 #   series: as before: max 50 is ~1.25 GB per 25-minute episode at 1080p, room for streaming
 #           WEB-DLs (often 45 MB per minute); 30 at 720p.
 app_config_recyclarr_sizes:
   movie:
     preferred:
-      720p: 30
-      1080p: 60
-      2160p: 90
+      720p: 25
+      1080p: 45
+      2160p: 70
     max:
-      720p: 60
-      1080p: 120
-      2160p: 120
+      720p: 50
+      1080p: 85
+      2160p: 85
   series:
     preferred:
       720p: 15
