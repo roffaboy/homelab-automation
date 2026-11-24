@@ -30,6 +30,13 @@ app_config_qbittorrent_preferences:
   save_path_changed_tmm_enabled: true
   category_changed_tmm_enabled: true
   upnp: false
+  # DHT is how a magnet link finds its first peers. The health check of the container restarts
+  # qBittorrent when it has no DHT nodes, so it is kept on.
+  dht: true
+  # The container's own health check asks the WebUI for the DHT node count. Only clients on
+  # localhost skip the login, and that is the container itself: the other apps and your browser
+  # come in through gluetun's address.
+  bypass_local_auth: true
   # How many torrents run at once; the rest wait in the queue. Fewer at once share the speed
   # among fewer, so each one is done sooner. Torrents without activity don't take a slot.
   max_active_downloads: 5
