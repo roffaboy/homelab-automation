@@ -15,9 +15,43 @@
 # app_config_jellyfin_images:
 #   admin: images/admin.jpg
 
-# Custom CSS, for example the ElegantFin theme (github.com/lscambo13/ElegantFin):
+# Custom CSS, for example the ElegantFin theme (github.com/lscambo13/ElegantFin), here with
+# Netflix colours, black and red (ElegantFin's own colour variables; the login background can use
+# {{ homelab_lan_ip }} and {{ homelab_ports.jellyfin }}):
 # app_config_jellyfin_css: |
 #   @import url("https://cdn.jsdelivr.net/gh/lscambo13/ElegantFin@main/Theme/ElegantFin-jellyfin-theme-build-latest-minified.css");
+#   :root {
+#     --loginPageBgUrl: url("http://{{ homelab_lan_ip }}:{{ homelab_ports.jellyfin }}/Branding/Splashscreen?format=webp&foregroundLayer=1&quality=33&width=3840&height=2160&blur=2");
+#     --extraCardButtonsVisibility: block;
+#     --overlayPlayButtonPosition: 50%;
+#     --cardHoverEffect: none;
+#     --libraryLabelVisibility: block;
+#   }
+#   :root {
+#     --darkerGradientPoint: #000000;
+#     --darkerGradientPointAlpha: rgba(0, 0, 0, .85);
+#     --lighterGradientPoint: #141414;
+#     --lighterGradientPointAlpha: rgba(20, 20, 20, .85);
+#     --gradientPointAlpha: rgba(20, 20, 20, .3);
+#     --headerColor: rgba(20, 20, 20, .8);
+#     --drawerColor: rgba(20, 20, 20, .92);
+#     --borderColor: #333333;
+#     --darkerBorderColor: #222222;
+#     --selectorBackgroundColor: #2b2b2b;
+#     --selectorBackgroundColorAlpha: rgba(43, 43, 43, .5);
+#     --tableBodyColor: #181818;
+#     --textColor: #e5e5e5;
+#     --dimTextColor: #b3b3b3;
+#     --accentColor: #e50914;
+#     --accentHoverColor: #f6121d;
+#     --btnSubmitColor: #b20710;
+#     --btnSubmitBorderColor: #e50914;
+#     --checkboxCheckedBgColor: #e50914;
+#     --highlightOutlineColor: #e50914;
+#     --cardHoverBorderColor: #e50914;
+#     --cardResumeProgressColor: #e50914;
+#     --osdSeekBarPlayedColor: #e50914;
+#   }
 
 # Plugins from Jellyfin's catalog (Dashboard, Plugins, Catalog), by name; installed when missing.
 # By default Intro Skipper and Jellyfin Enhanced, plus Simkl with vault_simkl_client_id: log in
