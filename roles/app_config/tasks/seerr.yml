@@ -48,7 +48,7 @@
 - name: Seerr | Add Radarr and Sonarr as default servers
   vars:
     _arr: "{{ item.item.item }}"
-    _profile: "{{ item.json | selectattr('name', 'equalto', app_config_quality_profile) | first }}"
+    _profile: "{{ item.json | selectattr('name', 'equalto', app_config_quality_profiles[_arr.name]) | first }}"
     _server:
       name: "{{ _arr.name | capitalize }}"
       hostname: "{{ _arr.name }}"
@@ -88,6 +88,53 @@
   loop: "{{ _app_config_seerr_profiles.results | rejectattr('skipped', 'defined') }}"
   loop_control:
     label: "{{ item.item.item.name }}"
+  changed_when: true
+  no_log: true
+
+# A server that exists keeps its settings, except the default profile: it follows
+# app_config_quality_profiles (the old one may be gone by now).
+- name: Seerr | Read the quality profiles
+  ansible.builtin.uri:
+    url: "{{ app_config_urls[item.name] }}/api/v3/qualityprofile"
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys[item.name] }}"
+  loop: "{{ app_config_arrs }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: _app_config_seerr_all_profiles
+  check_mode: false
+  no_log: true
+
+- name: Seerr | Use the profile of the setup in the servers that exist
+  vars:
+    _arr: "{{ item.0.item }}"
+    _wanted: "{{ app_config_quality_profiles[_arr.name] }}"
+    _found: >-
+      {{ (_app_config_seerr_all_profiles.results | selectattr('item.name', 'equalto', _arr.name) | first).json
+         | selectattr('name', 'equalto', _wanted) | list }}
+    _set:
+      activeProfileId: "{{ (_found | first).id | default(0) }}"
+      activeProfileName: "{{ _wanted }}"
+    _anime:
+      activeAnimeProfileId: "{{ (_found | first).id | default(0) }}"
+      activeAnimeProfileName: "{{ _wanted }}"
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.seerr }}/api/v1/settings/{{ _arr.name }}/{{ item.1.id }}"
+    method: PUT
+    headers:
+      X-Api-Key: "{{ _app_config_seerr_key }}"
+    body_format: json
+    # The id is in the address; Seerr refuses it in the body (read-only).
+    body: >-
+      {{ item.1 | dict2items | rejectattr('key', 'equalto', 'id') | items2dict
+         | combine(_set) | combine(_anime if _arr.name == 'sonarr' else {}) }}
+  loop: "{{ _app_config_seerr_servers.results | subelements('json', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.0.item.name }}: {{ item.1.name }}"
+  when:
+    - not item.1.is4k | default(false)
+    - item.1.activeProfileName != app_config_quality_profiles[item.0.item.name]
+    - (_found | length) > 0
   changed_when: true
   no_log: true
 

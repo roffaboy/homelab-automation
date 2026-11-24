@@ -72,7 +72,7 @@
 
 - name: Language profile | Check the quality names
   vars:
-    _main: "{{ _app_config_profiles.json | selectattr('name', 'equalto', app_config_quality_profile) | first }}"
+    _main: "{{ _app_config_profiles.json | selectattr('name', 'equalto', app_config_quality_profiles[_app_config_arr.name]) | first }}"
     _names: "{{ _main['items'] | map(attribute='name', default='') | zip(_main['items'] | map(attribute='quality.name', default='')) | map('join') | list }}"
   ansible.builtin.assert:
     that: item in _names
@@ -86,7 +86,7 @@
 # language in the profile itself: Any, because TRaSH says it can't be combined with the formats.
 - name: Language profile | The copy of the main profile
   vars:
-    _main: "{{ _app_config_profiles.json | selectattr('name', 'equalto', app_config_quality_profile) | first }}"
+    _main: "{{ _app_config_profiles.json | selectattr('name', 'equalto', app_config_quality_profiles[_app_config_arr.name]) | first }}"
     _rejected: "Language: Not {{ _app_config_lang.name }}"
     _scores: "{{ {_rejected: -10000} }}"
     _known: "{{ _main.formatItems | map(attribute='format') | list }}"
@@ -118,5 +118,5 @@
     api_key: "{{ _app_config_api_keys[_app_config_arr.name] }}"
     endpoint: qualityprofile
     body: >-
-      {{ _copied | combine(_language, {'name': app_config_quality_profile ~ ' - ' ~ _app_config_lang.name,
+      {{ _copied | combine(_language, {'name': app_config_quality_profiles[_app_config_arr.name] ~ ' - ' ~ _app_config_lang.name,
                                        'items': _items, 'formatItems': _format_items}) }}
