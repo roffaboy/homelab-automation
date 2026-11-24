@@ -165,6 +165,7 @@ app_config_jellyfin_enhanced_settings:
   QualityTagsEnabled: true   # 1080p, HDR, codec and audio on the posters
   RatingTagsEnabled: true    # TMDb and Rotten Tomatoes scores on the posters
   ShowAwards: true           # wins and nominations on a title's page
+  TagLayout: summary         # one quiet pill on a poster ("1080p · 7.4") instead of tags in all four corners
 # Plugin repositories besides Jellyfin's own, added when missing.
 app_config_jellyfin_repositories:
   - Name: Intro Skipper
