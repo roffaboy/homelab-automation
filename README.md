@@ -1,6 +1,6 @@
 # homelab-automation
 
-[![CI](https://img.shields.io/github/actions/workflow/status/twgribnau/homelab-automation/ci.yml?branch=main&style=flat&logo=githubactions&logoColor=white&label=CI)](https://github.com/twgribnau/homelab-automation/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/twgribnau/homelab-automation?style=flat&logo=github&logoColor=white&label=Release)](https://github.com/twgribnau/homelab-automation/releases/latest) [![Last commit](https://img.shields.io/github/last-commit/twgribnau/homelab-automation?style=flat&logo=github&logoColor=white&label=Last%20commit)](https://github.com/twgribnau/homelab-automation/commits/main) [![Renovate](https://img.shields.io/badge/Renovate-enabled-308BE3?style=flat&logo=renovate&logoColor=white)](renovate.json) [![License](https://img.shields.io/github/license/twgribnau/homelab-automation?style=flat&label=License)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/roffaboy/homelab-automation/ci.yml?branch=main&style=flat&logo=githubactions&logoColor=white&label=CI)](https://github.com/roffaboy/homelab-automation/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/roffaboy/homelab-automation?style=flat&logo=github&logoColor=white&label=Release)](https://github.com/roffaboy/homelab-automation/releases/latest) [![Last commit](https://img.shields.io/github/last-commit/roffaboy/homelab-automation?style=flat&logo=github&logoColor=white&label=Last%20commit)](https://github.com/roffaboy/homelab-automation/commits/main) [![Renovate](https://img.shields.io/badge/Renovate-enabled-308BE3?style=flat&logo=renovate&logoColor=white)](renovate.json) [![License](https://img.shields.io/github/license/roffaboy/homelab-automation?style=flat&label=License)](LICENSE)
 
 Ansible for a single Ubuntu home server: request a movie or series, it downloads and shows up
 in Jellyfin. The playbook installs the apps below in Docker, connects them to each other and
@@ -29,7 +29,7 @@ On a server with Ubuntu 26.04 and a user with `sudo`:
 
 ```bash
 sudo apt install -y git
-git clone https://github.com/twgribnau/homelab-automation.git && cd homelab-automation
+git clone https://github.com/roffaboy/homelab-automation.git && cd homelab-automation
 mkdir ~/homelab-config && cp config.example/* ~/homelab-config/
 nano ~/homelab-config/vault.yml      # your username, a password for the apps, email (see Your configuration)
 nano ~/homelab-config/settings.yml   # which optional apps you want
@@ -136,6 +136,12 @@ ansible-playbook provision.yml
 - `./reset.sh` wipes the server back to Ubuntu + Tailscale (`--keep-media` keeps the library).
 - Family members only need a Jellyfin user, with their own watch history: `vault_jellyfin_users`
   in the vault, or make one in Jellyfin (Dashboard, Users). They log in with it on the TV.
+  Such a user is not an admin and sees every library. Every Jellyfin user also gets a Seerr user,
+  so they can request movies and series; by default a request waits for an admin to approve it.
+  In `config/settings.yml` you choose, by Jellyfin user name, who gets more:
+  `app_config_seerr_auto_approve_users` (their requests go through by themselves) and
+  `app_config_seerr_admin_users` (everything in Seerr: settings, clearing a title's data, other
+  people's requests). The first admin is the login you set up the server with.
 - Ebooks: put them in `~/srv/media-data/books-ingest`; Calibre-Web imports them into the library.
   For a Kobo: open Calibre-Web at `http://<server-ip>:8083`, Profile, Kobo Sync Token, and copy
   the `api_endpoint` line into `.kobo/Kobo/Kobo eReader.conf` on the Kobo (USB), under
@@ -274,7 +280,7 @@ The linked folders have a short README of their own.
 | Cleanuparr | Your login, qBittorrent, Radarr/Sonarr; removes downloads stuck on metadata (15 min) or stalled (30 min), then Radarr/Sonarr search again |
 | Recyclarr | TRaSH Guides quality profiles (stock profiles removed), custom formats and naming: "Movies" takes 2160p, then 1080p, then 720p, up to ~10 GB a film; "Series" is WEB-1080p with its fallbacks. Optionally one more profile per language (`app_config_language_profiles`, e.g. "Movies - NL": only releases in that language are downloaded; TRaSH has no such profile, so Ansible builds it from TRaSH's language format) |
 | Jellyfin | Admin account, more users (`vault_jellyfin_users`), optionally profile tiles, pictures and one home screen (`config/jellyfin.yml`), plugins (Intro Skipper, Jellyfin Enhanced, Simkl), libraries, hardware transcoding, API key for Radarr/Sonarr |
-| Seerr | Jellyfin login, Radarr/Sonarr as default servers, optionally the discover languages and streaming region (`app_config_seerr_discover`), requests from Jellyfin's search (Jellyfin Enhanced) |
+| Seerr | Jellyfin login, Radarr/Sonarr as default servers, optionally the discover languages and streaming region (`app_config_seerr_discover`), a Seerr user for every Jellyfin user and who is auto-approved or admin (`app_config_seerr_auto_approve_users`, `app_config_seerr_admin_users`), requests from Jellyfin's search (Jellyfin Enhanced) |
 | Maintainerr | Jellyfin, Radarr, Sonarr, Seerr and Telegram, and your rule groups from `config/maintainerr.yml` (the example removes what has been watched, via a "Leaving soon" collection in Jellyfin). It has no login |
 | Bazarr | Radarr/Sonarr connection, subtitles for everything in your languages (`app_config_bazarr_profile`, English by default), OpenSubtitles, SubDL and Subsource (optional, account or key in the vault). Optional (`homelab_bazarr`) |
 | SuggestArr | Optional (`homelab_suggestarr`): your login, Jellyfin (and whose watching it follows), Seerr, TMDb, Simkl and OMDb, filters (`app_config_suggestarr_settings`), approval before anything is requested |
