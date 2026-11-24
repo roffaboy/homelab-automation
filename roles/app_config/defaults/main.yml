@@ -77,6 +77,9 @@ app_config_telegram_events:
     - onApplicationUpdate
 # Seerr: new requests and requests it could not send to Radarr/Sonarr (2 + 16 + 128).
 app_config_seerr_telegram_types: 146
+# Jellyfin users (names) whose requests Seerr approves by itself, e.g. the people you share with.
+# Everyone else's wait for an admin. Every Jellyfin user also gets a Seerr user.
+app_config_seerr_auto_approve_users: []
 # Optional: Seerr's defaults for discovering and where something streams, e.g.
 #   originalLanguage: "nl|en"
 #   streamingRegion: NL
