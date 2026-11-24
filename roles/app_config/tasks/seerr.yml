@@ -258,7 +258,7 @@
   register: _app_config_seerr_users_now
   check_mode: false
   no_log: true
-  when: app_config_seerr_auto_approve_users + app_config_seerr_admin_users | length > 0
+  when: (app_config_seerr_auto_approve_users + app_config_seerr_admin_users) | length > 0
 
 - name: Seerr | Give those users their permissions
   vars:
@@ -284,7 +284,7 @@
   loop_control:
     label: "{{ item.jellyfinUsername }}"
   when:
-    - app_config_seerr_auto_approve_users + app_config_seerr_admin_users | length > 0
+    - (app_config_seerr_auto_approve_users + app_config_seerr_admin_users) | length > 0
     - (_approve | int) + (_admin | int) > 0
   changed_when: true
   no_log: true
