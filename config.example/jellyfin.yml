@@ -52,6 +52,11 @@
 #     --cardResumeProgressColor: #e50914;
 #     --osdSeekBarPlayedColor: #e50914;
 #   }
+#   /* The border of the card you point at or tab to: ElegantFin makes it white. */
+#   .card:focus .cardBox.visualCardBox,
+#   .card:focus .cardBox:not(.visualCardBox) .cardScalable {
+#     border-color: #e50914 !important;
+#   }
 
 # Plugins from Jellyfin's catalog (Dashboard, Plugins, Catalog), by name; installed when missing.
 # By default Intro Skipper and Jellyfin Enhanced, plus Simkl with vault_simkl_client_id: log in
