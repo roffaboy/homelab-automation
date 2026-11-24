@@ -29,6 +29,12 @@
         href: {{ href('suggestarr') }}
         siteMonitor: http://suggestarr:5000
 {% endif %}
+{% if homelab_holyarrs | bool %}
+    - HolyArrs:
+        icon: mdi-movie-open
+        href: {{ href('holyarrs') }}
+        siteMonitor: http://holyarrs:6262
+{% endif %}
 {% if homelab_books | bool %}
     - Calibre-Web:
         icon: calibre-web.png

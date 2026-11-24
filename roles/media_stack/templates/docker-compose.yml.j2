@@ -156,6 +156,25 @@ services:
     restart: unless-stopped
 
 {% endif %}
+{% if homelab_holyarrs | bool %}
+  # HolyArrs, one app for what Radarr, Sonarr, Prowlarr, Bazarr and Seerr do. Here to try it: the
+  # library is read-only and there is no downloads folder, so it can import your Radarr and Sonarr
+  # setup (it only reads them) but not touch a file. Not connected to qBittorrent.
+  holyarrs:
+    image: {{ media_stack_images.holyarrs }}
+    environment:
+      PUID: "{{ homelab_uid }}"
+      PGID: "{{ homelab_gid }}"
+      TZ: {{ homelab_tz }}
+    volumes:
+      - {{ homelab_stack_dirs.media }}/appdata/holyarrs:/config
+      - {{ homelab_data_dir }}/media/movies:/movies:ro
+      - {{ homelab_data_dir }}/media/series:/tv:ro
+    ports:
+      - "{{ homelab_publish_ip }}:{{ homelab_ports.holyarrs }}:6262"
+    restart: unless-stopped
+
+{% endif %}
   # Syncs TRaSH Guides profiles, custom formats and naming into Radarr and Sonarr.
   # Its config is written by the app_config role, which knows the API keys.
   recyclarr:

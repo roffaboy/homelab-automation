@@ -51,6 +51,7 @@ reservation). Afterwards the apps are at `http://<server-ip>:<port>`:
 | Seerr (request movies and series) | `:5055` |
 | Jellyfin (watch) | `:8096` |
 | SuggestArr (suggestions) | `:5000` |
+| HolyArrs (optional, to try) | `:6262` |
 | Homepage (every app on one page) | `:3001` |
 | Calibre-Web (ebooks) | `:8083` |
 | Radarr `:7878`, Sonarr `:8989`, Bazarr `:6767`, Prowlarr `:9696`, qBittorrent `:8080`, Cleanuparr `:11011`, Maintainerr `:6246`, Grafana `:3000` | |
@@ -104,6 +105,7 @@ Choose in `config/settings.yml`, then run the playbook again.
 | No start page | `homelab_homepage: false` |
 | No ebooks | `homelab_books: false` |
 | Suggestions | `homelab_suggestarr: true`, then set it up at `:5000` (below) |
+| Try HolyArrs | `homelab_holyarrs: true`, then open `:6262`. It reads your library read-only and isn't connected to qBittorrent; in Settings, Import from other apps, add Radarr (`http://radarr:7878`) and Sonarr (`http://sonarr:8989`) with their API keys |
 | Other subtitle languages | `app_config_bazarr_profile: { name: German and English, languages: [de, en] }` |
 | Indexers | `config/indexers.yml`, or add them in Prowlarr (those are kept) |
 | More settings | Any setting in `inventory/group_vars/homelab/main.yml` or `roles/*/defaults/main.yml` |

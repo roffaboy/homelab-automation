@@ -6,6 +6,7 @@ homelab_monitoring: true
 homelab_homepage: true
 homelab_books: true
 homelab_suggestarr: false
+homelab_holyarrs: false   # try HolyArrs at :6262 (README, Options)
 homelab_tailscale: true
 # A nightly backup of the app data and ebooks to the cloud (README, Offsite backup), e.g.:
 # homelab_backup_remote: "gdrive:Backup/homelab"

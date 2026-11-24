@@ -17,6 +17,7 @@
     - appdata/recyclarr
     - appdata/bazarr
     - appdata/suggestarr
+    - appdata/holyarrs
 
 - name: Deploy docker-compose.yml
   ansible.builtin.template:

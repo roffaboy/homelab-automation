@@ -42,6 +42,7 @@ homelab_monitoring: true   # Grafana and Prometheus
 homelab_homepage: true     # a start page with every app
 homelab_books: true        # ebooks, synced to a Kobo
 homelab_suggestarr: false  # suggestions from what you watch
+homelab_holyarrs: false    # HolyArrs, to try next to the *arrs (reads the library, changes nothing)
 # The web UIs are at http://<LAN address>:<port>. With Tailscale also away from home: it routes
 # that address to the server (README, Away from home). Without it only at home.
 homelab_tailscale: true
@@ -77,6 +78,7 @@ homelab_ports:
   cleanuparr: 11011
   maintainerr: 6246
   suggestarr: 5000
+  holyarrs: 6262
 
 # Peer port qBittorrent listens on inside the VPN. A port forwarded by the VPN provider
 # (AirVPN: Client Area > Ports) in the vault makes it reachable for other peers.
