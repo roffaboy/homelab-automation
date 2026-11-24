@@ -118,6 +118,11 @@ app_config_github_token: "{{ vault_github_token | default('') }}"
 #     url: "https://airvpn.org"
 app_config_accounts: []
 
+# How many seeders a torrent needs before Radarr and Sonarr take it (Prowlarr's Standard profile,
+# which the indexers follow). Higher means fewer dead downloads; but old or Dutch releases often have
+# only 1 or 2 seeders, and with 5 you would never get those.
+app_config_prowlarr_minimum_seeders: 3
+
 # Prowlarr's indexers (the sites it searches), from config/indexers.yml. Indexers you add in
 # Prowlarr itself are kept. Example: config.example/indexers.yml
 app_config_prowlarr_indexers: []

@@ -33,6 +33,19 @@
   loop_control:
     label: "{{ item.name }}"
 
+# Radarr and Sonarr take the best ranked release and do not look at seeders; a torrent with one
+# seeder who leaves stalls and is removed by Cleanuparr after half an hour. The indexers follow this
+# profile, so a release needs at least this many seeders to be taken.
+- name: Prowlarr | Minimum seeders
+  servarr_resource:
+    url: "{{ app_config_urls.prowlarr }}"
+    api_key: "{{ _app_config_api_keys.prowlarr }}"
+    api_version: v1
+    endpoint: appprofile
+    body:
+      name: Standard
+      minimumSeeders: "{{ app_config_prowlarr_minimum_seeders }}"
+
 # Prowlarr tests a site when it is saved, and public sites are flaky (rate limits, moved
 # mirrors). One failing site must not stop the run; the next run retries it.
 - name: Prowlarr | Indexers
