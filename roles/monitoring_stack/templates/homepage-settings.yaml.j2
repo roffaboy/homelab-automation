@@ -1,14 +1,9 @@
 ---
+# {{ ansible_managed }}
 # https://gethomepage.dev/configs/settings/
 title: Homelab
-theme: dark
+theme: {{ homelab_homepage_theme }}
 color: slate
-# A dark surface of small cylinders (Unsplash), dimmed so the cards stay readable; the cards blur
-# what is behind them.
-background:
-  image: https://images.unsplash.com/photo-1762417108285-3dcef5ae3dc7?auto=format&fit=crop&w=2560&q=80
-  opacity: 60
-cardBlur: md
 headerStyle: boxedWidgets
 # A dot per app: green when its web UI answers (siteMonitor in services.yaml).
 statusStyle: dot

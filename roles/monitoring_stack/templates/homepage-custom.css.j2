@@ -1,4 +1,9 @@
+/* {{ ansible_managed }} */
 /* https://gethomepage.dev/configs/custom-css-js/ */
+{% if homelab_homepage_custom_theme | bool %}
+
+{% include 'homepage-theme.css' %}
+{% endif %}
 
 /* The numbers in each tile two by two, so the tiles come out about square. */
 .service-container {

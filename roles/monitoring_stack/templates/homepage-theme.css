@@ -1,0 +1,178 @@
+/* The look of Holyfin and HolyArrs: near-black greys (white with soft greys in the light look), one
+   red accent, square corners and Geist. The colours are the same values as Holyfin's. The dark set
+   is the default; Homepage puts the class "dark" on <html> for theme: dark (settings.yaml). */
+@font-face {
+  font-family: Geist;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/gh/roffaboy/holyfin@v0.2.0/fonts/Geist-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Geist;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/gh/roffaboy/holyfin@v0.2.0/fonts/Geist-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --bg: #0b0b0c;
+  --surface: #161618;
+  --surface-2: #1e1e21;
+  --line: rgb(255 255 255 / 9%);
+  --line-strong: rgb(255 255 255 / 18%);
+  --edge: #e6e8ee;
+  --text: #f5f5f7;
+  --muted: #a1a1a6;
+  --accent: #ff453a;
+  --accent-fill: #d42d24;
+  --hover: rgb(255 255 255 / 8%);
+  --tab-active: rgb(255 255 255 / 7%);
+  --font: "Geist", -apple-system, blinkmacsystemfont, "Segoe UI", system-ui, sans-serif;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+}
+
+:root:not(.dark) {
+  --bg: #fff;
+  --surface: #f6f6f7;
+  --surface-2: #ececef;
+  --line: rgb(0 0 0 / 8%);
+  --line-strong: rgb(0 0 0 / 16%);
+  --edge: #1d1d1f;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --accent: #e5352b;
+  --hover: rgb(0 0 0 / 5%);
+  --tab-active: rgb(0 0 0 / 6%);
+}
+
+html,
+body,
+#__next,
+#page_wrapper {
+  background: var(--bg) !important;
+  color: var(--text);
+  font-family: var(--font);
+}
+
+/* Flat: no picture, no blur, no shadows, no rounded corners. */
+#background {
+  display: none !important;
+}
+
+[class*="rounded"]:not(.rounded-full) {
+  border-radius: 0 !important;
+}
+
+[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Text */
+.service-group-name,
+.bookmark-group-name {
+  color: var(--text) !important;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
+.service-name,
+.service-title-text,
+.bookmark-text {
+  color: var(--text) !important;
+  font-weight: 500;
+}
+
+.service-description,
+.service-block-label {
+  color: var(--muted) !important;
+}
+
+.service-block-value {
+  color: var(--text) !important;
+}
+
+/* The tiles: a layer with a fine line. On hover the same as a poster in Holyfin: 2 px up, a light
+   edge and a solid red block behind it, down and to the right. */
+li.service > div,
+.bookmark > a {
+  background: var(--surface) !important;
+  border: 1px solid var(--line);
+  box-shadow: none !important;
+  transition: transform .15s var(--ease-out), box-shadow .15s var(--ease-out), border-color .15s var(--ease-out);
+}
+
+li.service:hover > div,
+.bookmark:hover > a {
+  border-color: transparent;
+  box-shadow: inset 0 0 0 2px var(--edge), 4px 4px 0 var(--accent-fill) !important;
+  transform: translateY(-2px);
+}
+
+.service-container > div,
+.service-container ~ div > div {
+  background: var(--surface-2) !important;
+}
+
+/* The tabs: a line under them, and the open one has a red edge. */
+#myTab {
+  background: transparent !important;
+  border-bottom: 1px solid var(--line);
+}
+
+#myTab li {
+  color: var(--muted) !important;
+}
+
+#myTab button {
+  font-weight: 500;
+  margin: 0 !important;
+  transition: background .15s var(--ease-out), color .15s var(--ease-out);
+}
+
+#myTab button:hover {
+  background: var(--hover) !important;
+  color: var(--text);
+}
+
+#myTab button[class*="bg-theme-300"],
+#myTab button[class*="dark:bg-white/10"]:not([class*="hover"]) {
+  background: var(--tab-active) !important;
+  box-shadow: inset 0 -2px 0 var(--accent);
+  color: var(--text);
+}
+
+/* The bar of resources at the top: one box with a fine line, and bars in the accent colour. */
+#widgets-wrap > div:not(#information-widgets-right) {
+  background: var(--surface) !important;
+  border: 1px solid var(--line);
+  box-shadow: none !important;
+}
+
+.resource-usage {
+  background: var(--line-strong) !important;
+  border-radius: 0 !important;
+}
+
+.resource-usage > div {
+  background: var(--accent) !important;
+  border-radius: 0 !important;
+}
+
+#information-widgets * {
+  color: var(--text);
+}
+
+/* The rows of a queue (Radarr, Sonarr): one colour, not one per piece of the row. */
+li.service .h-5 {
+  background: var(--surface-2) !important;
+}
+
+li.service .h-5 > * {
+  background: transparent !important;
+}
