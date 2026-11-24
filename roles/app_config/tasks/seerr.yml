@@ -206,6 +206,81 @@
   changed_when: true
   no_log: true
 
+# Every Jellyfin user also gets a Seerr user. Seerr only knows the admin after the first sign-in, and
+# Jellyfin Enhanced links a Jellyfin profile to the Seerr user with the same Jellyfin id: without
+# one it shows "not connected" in Jellyfin. Users you add in Seerr itself are left alone.
+- name: Seerr | Read the users
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.seerr }}/api/v1/user?take=100"
+    headers:
+      X-Api-Key: "{{ _app_config_seerr_key }}"
+  register: _app_config_seerr_users
+  check_mode: false
+  no_log: true
+
+- name: Seerr | Read the Jellyfin users
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Users"
+    headers:
+      Authorization: MediaBrowser Token="{{ _app_config_jellyfin_api_key }}"
+  register: _app_config_seerr_jf_users
+  check_mode: false
+  no_log: true
+  when: _app_config_jellyfin_api_key is defined
+
+- name: Seerr | Import the Jellyfin users it does not know yet
+  vars:
+    _known: "{{ _app_config_seerr_users.json.results | map(attribute='jellyfinUserId') | select | list }}"
+    _missing: "{{ _app_config_seerr_jf_users.json | map(attribute='Id') | reject('in', _known) | list }}"
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.seerr }}/api/v1/user/import-from-jellyfin"
+    method: POST
+    headers:
+      X-Api-Key: "{{ _app_config_seerr_key }}"
+    body_format: json
+    body:
+      jellyfinUserIds: "{{ _missing }}"
+    status_code: [200, 201]
+  changed_when: true
+  no_log: true
+  when:
+    - _app_config_jellyfin_api_key is defined
+    - _missing | length > 0
+
+# Their requests need no approval (app_config_seerr_auto_approve_users): Seerr's "Auto-Approve"
+# permission, 128, added to what they have. The admin always has it.
+- name: Seerr | Read the users again
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.seerr }}/api/v1/user?take=100"
+    headers:
+      X-Api-Key: "{{ _app_config_seerr_key }}"
+  register: _app_config_seerr_users_now
+  check_mode: false
+  no_log: true
+  when: app_config_seerr_auto_approve_users | length > 0
+
+- name: Seerr | Auto-approve the requests of those users
+  vars:
+    _perm: "{{ item.permissions | int }}"
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.seerr }}/api/v1/user/{{ item.id }}/settings/permissions"
+    method: POST
+    headers:
+      X-Api-Key: "{{ _app_config_seerr_key }}"
+    body_format: json
+    body:
+      permissions: "{{ _perm | int + 128 }}"
+  loop: >-
+    {{ _app_config_seerr_users_now.json.results
+       | selectattr('jellyfinUsername', 'in', app_config_seerr_auto_approve_users) | list }}
+  loop_control:
+    label: "{{ item.jellyfinUsername }}"
+  when:
+    - app_config_seerr_auto_approve_users | length > 0
+    - (_perm | int // 128) % 2 == 0
+  changed_when: true
+  no_log: true
+
 # Jellyfin Enhanced (app_config_jellyfin_plugins): requests from Jellyfin's search through Seerr,
 # and app_config_jellyfin_enhanced_settings.
 - name: Seerr | Read the Jellyfin plugins
