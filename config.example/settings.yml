@@ -37,3 +37,6 @@ homelab_tailscale: true
 # Jellyfin users whose requests Seerr approves by itself (everyone else's wait for an admin):
 # app_config_seerr_auto_approve_users:
 #   - viewer
+# Jellyfin users who may do everything in Seerr (Admin), e.g. the login you use every day:
+# app_config_seerr_admin_users:
+#   - viewer

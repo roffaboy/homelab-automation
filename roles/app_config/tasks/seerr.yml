@@ -247,8 +247,9 @@
     - _app_config_jellyfin_api_key is defined
     - _missing | length > 0
 
-# Their requests need no approval (app_config_seerr_auto_approve_users): Seerr's "Auto-Approve"
-# permission, 128, added to what they have. The admin always has it.
+# The permissions you give chosen users, added to what they have (app_config_seerr_auto_approve_users:
+# Auto-Approve, 128; app_config_seerr_admin_users: Admin, 2, which allows everything). Both in one
+# task, so one cannot overwrite the other. The Seerr admin always has all of them.
 - name: Seerr | Read the users again
   ansible.builtin.uri:
     url: "{{ app_config_urls.seerr }}/api/v1/user?take=100"
@@ -257,11 +258,17 @@
   register: _app_config_seerr_users_now
   check_mode: false
   no_log: true
-  when: app_config_seerr_auto_approve_users | length > 0
+  when: app_config_seerr_auto_approve_users + app_config_seerr_admin_users | length > 0
 
-- name: Seerr | Auto-approve the requests of those users
+- name: Seerr | Give those users their permissions
   vars:
     _perm: "{{ item.permissions | int }}"
+    _approve: >-
+      {{ 128 if item.jellyfinUsername in app_config_seerr_auto_approve_users
+                and (_perm | int // 128) % 2 == 0 else 0 }}
+    _admin: >-
+      {{ 2 if item.jellyfinUsername in app_config_seerr_admin_users
+              and (_perm | int // 2) % 2 == 0 else 0 }}
   ansible.builtin.uri:
     url: "{{ app_config_urls.seerr }}/api/v1/user/{{ item.id }}/settings/permissions"
     method: POST
@@ -269,15 +276,16 @@
       X-Api-Key: "{{ _app_config_seerr_key }}"
     body_format: json
     body:
-      permissions: "{{ _perm | int + 128 }}"
+      permissions: "{{ _perm | int + _approve | int + _admin | int }}"
   loop: >-
     {{ _app_config_seerr_users_now.json.results
-       | selectattr('jellyfinUsername', 'in', app_config_seerr_auto_approve_users) | list }}
+       | selectattr('jellyfinUsername', 'in', app_config_seerr_auto_approve_users + app_config_seerr_admin_users)
+       | list }}
   loop_control:
     label: "{{ item.jellyfinUsername }}"
   when:
-    - app_config_seerr_auto_approve_users | length > 0
-    - (_perm | int // 128) % 2 == 0
+    - app_config_seerr_auto_approve_users + app_config_seerr_admin_users | length > 0
+    - (_approve | int) + (_admin | int) > 0
   changed_when: true
   no_log: true
 
