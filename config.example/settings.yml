@@ -7,6 +7,8 @@ homelab_homepage: true
 homelab_books: true
 homelab_suggestarr: false
 homelab_tailscale: true
+# Jellyfin's theme for every browser, app and Dashboard that has not chosen one: dark (default) or light.
+# homelab_jellyfin_theme: light
 # A nightly backup of the app data and ebooks to the cloud (README, Offsite backup), e.g.:
 # homelab_backup_remote: "gdrive:Backup/homelab"
 # The time zone of the apps (default Etc/UTC), e.g.:

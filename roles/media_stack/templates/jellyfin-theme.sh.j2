@@ -1,0 +1,7 @@
+#!/bin/sh
+# {{ ansible_managed }}
+# Makes {{ homelab_jellyfin_theme }} the theme Jellyfin's web app uses until someone chooses another.
+f=/usr/share/jellyfin/web/config.json
+jq --arg t "{{ homelab_jellyfin_theme }}" \
+  '.themes |= map(del(.default) | if .id == $t then .default = true else . end)' "$f" > /tmp/config.json
+cat /tmp/config.json > "$f"

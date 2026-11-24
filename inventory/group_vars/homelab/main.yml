@@ -42,6 +42,10 @@ homelab_monitoring: true   # Grafana and Prometheus
 homelab_homepage: true     # a start page with every app
 homelab_books: true        # ebooks, synced to a Kobo
 homelab_suggestarr: false  # suggestions from what you watch
+# Jellyfin's theme: "dark" (Jellyfin's own default, so also what an empty value gives) or "light".
+# It is the default for every browser and app that has not chosen one (each picks its own under
+# Settings, Display, Theme and keeps that), and the Dashboard theme of every user.
+homelab_jellyfin_theme: ""
 # The web UIs are at http://<LAN address>:<port>. With Tailscale also away from home: it routes
 # that address to the server (README, Away from home). Without it only at home.
 homelab_tailscale: true
