@@ -15,73 +15,10 @@
 # app_config_jellyfin_images:
 #   admin: images/admin.jpg
 
-# Custom CSS, for example the ElegantFin theme (github.com/lscambo13/ElegantFin), here with
-# Netflix colours, black and red (ElegantFin's own colour variables; the login background can use
-# {{ homelab_lan_ip }} and {{ homelab_ports.jellyfin }}):
+# Custom CSS for Jellyfin's web interface (and the TV apps built on it), for example your own theme
+# from a repository; set on every run. Empty leaves what is set in Jellyfin.
 # app_config_jellyfin_css: |
-#   @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap");
-#   @import url("https://cdn.jsdelivr.net/gh/lscambo13/ElegantFin@main/Theme/ElegantFin-jellyfin-theme-build-latest-minified.css");
-#   :root {
-# yamllint disable-line rule:line-length
-#     --loginPageBgUrl: url("http://{{ homelab_lan_ip }}:{{ homelab_ports.jellyfin }}/Branding/Splashscreen?format=webp&foregroundLayer=1&quality=33&width=3840&height=2160&blur=2");
-#     --extraCardButtonsVisibility: block;
-#     --overlayPlayButtonPosition: 50%;
-#     --cardHoverEffect: none;
-#     --libraryLabelVisibility: block;
-#   }
-#   :root {
-#     --darkerGradientPoint: #000000;
-#     --darkerGradientPointAlpha: rgba(0, 0, 0, .85);
-#     --lighterGradientPoint: #141414;
-#     --lighterGradientPointAlpha: rgba(20, 20, 20, .85);
-#     --gradientPointAlpha: rgba(20, 20, 20, .3);
-#     --headerColor: rgba(20, 20, 20, .8);
-#     --drawerColor: rgba(20, 20, 20, .92);
-#     --borderColor: #333333;
-#     --darkerBorderColor: #222222;
-#     --selectorBackgroundColor: #2b2b2b;
-#     --selectorBackgroundColorAlpha: rgba(43, 43, 43, .5);
-#     --tableBodyColor: #181818;
-#     --textColor: #e5e5e5;
-#     --dimTextColor: #b3b3b3;
-#     --accentColor: #e50914;
-#     --accentHoverColor: #f6121d;
-#     --btnSubmitColor: #d1d1d1;
-#     --btnSubmitBorderColor: #e5e5e5;
-#     --checkboxCheckedBgColor: #e50914;
-#     --highlightOutlineColor: #e50914;
-#     --cardHoverBorderColor: rgba(229, 9, 20, .55);
-#     --cardResumeProgressColor: #e50914;
-#     --osdSeekBarPlayedColor: #e50914;
-#   }
-#   /* Light grey buttons (the selected tab, Play All) need dark text. */
-#   .MuiButton-colorPrimary,
-#   .button-submit,
-#   .upNextContainer .btnStartNow {
-#     color: #141414 !important;
-#   }
-#   /* The card you point at or tab to: a thin red edge and a dark shadow, no red glow. */
-#   .cardScalable,
-#   .visualCardBox {
-#     transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
-#   }
-#   .card-hoverable:hover .cardScalable,
-#   .card-hoverable:hover .visualCardBox,
-#   .card:focus .cardBox.visualCardBox,
-#   .card:focus .cardBox:not(.visualCardBox) .cardScalable {
-#     border-color: rgba(229, 9, 20, .85) !important;
-#     box-shadow: 0 6px 18px rgba(0, 0, 0, .6) !important;
-#   }
-#   /* The font. Icons keep their own. */
-#   html,
-#   body,
-#   button,
-#   input,
-#   select,
-#   textarea,
-#   .emby-button {
-#     font-family: "Figtree", "Inter", sans-serif !important;
-#   }
+#   @import url("https://cdn.jsdelivr.net/gh/<user>/<repo>@<tag>/theme.css");
 
 # Plugins from Jellyfin's catalog (Dashboard, Plugins, Catalog), by name; installed when missing.
 # By default Intro Skipper and Jellyfin Enhanced, plus Simkl with vault_simkl_client_id: log in
