@@ -270,9 +270,11 @@
   vars:
     # One entry per language of Bazarr's profile: not for hearing impaired, not forced only.
     _languages: >-
-      {{ ('[' ~ (app_config_bazarr_profile.languages
-                 | map('regex_replace', '^(.*)$', '{"language": "\\1", "hearing_impaired": "normal", "forced": false}')
-                 | join(',')) ~ ']') | from_json }}
+      {%- set out = [] -%}
+      {%- for l in app_config_bazarr_profile.languages -%}
+      {%- set _ = out.append({'language': l, 'hearing_impaired': 'normal', 'forced': false}) -%}
+      {%- endfor -%}
+      {{- out }}
   ansible.builtin.uri:
     url: "{{ app_config_urls.holyarrs }}/api/v1/settings/subtitles"
     method: PUT
