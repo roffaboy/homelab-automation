@@ -206,6 +206,47 @@
   changed_when: true
   no_log: true
 
+# Every Jellyfin user also gets a Seerr user. Seerr only knows the admin after the first sign-in, and
+# Jellyfin Enhanced links a Jellyfin profile to the Seerr user with the same Jellyfin id: without
+# one it shows "not connected" in Jellyfin. Users you add in Seerr itself are left alone.
+- name: Seerr | Read the users
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.seerr }}/api/v1/user?take=100"
+    headers:
+      X-Api-Key: "{{ _app_config_seerr_key }}"
+  register: _app_config_seerr_users
+  check_mode: false
+  no_log: true
+
+- name: Seerr | Read the Jellyfin users
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Users"
+    headers:
+      Authorization: MediaBrowser Token="{{ _app_config_jellyfin_api_key }}"
+  register: _app_config_seerr_jf_users
+  check_mode: false
+  no_log: true
+  when: _app_config_jellyfin_api_key is defined
+
+- name: Seerr | Import the Jellyfin users it does not know yet
+  vars:
+    _known: "{{ _app_config_seerr_users.json.results | map(attribute='jellyfinUserId') | select | list }}"
+    _missing: "{{ _app_config_seerr_jf_users.json | map(attribute='Id') | reject('in', _known) | list }}"
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.seerr }}/api/v1/user/import-from-jellyfin"
+    method: POST
+    headers:
+      X-Api-Key: "{{ _app_config_seerr_key }}"
+    body_format: json
+    body:
+      jellyfinUserIds: "{{ _missing }}"
+    status_code: [200, 201]
+  changed_when: true
+  no_log: true
+  when:
+    - _app_config_jellyfin_api_key is defined
+    - _missing | length > 0
+
 # Jellyfin Enhanced (app_config_jellyfin_plugins): requests from Jellyfin's search through Seerr,
 # and app_config_jellyfin_enhanced_settings.
 - name: Seerr | Read the Jellyfin plugins
