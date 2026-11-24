@@ -21,6 +21,7 @@
 # app_config_jellyfin_css: |
 #   @import url("https://cdn.jsdelivr.net/gh/lscambo13/ElegantFin@main/Theme/ElegantFin-jellyfin-theme-build-latest-minified.css");
 #   :root {
+# yamllint disable-line rule:line-length
 #     --loginPageBgUrl: url("http://{{ homelab_lan_ip }}:{{ homelab_ports.jellyfin }}/Branding/Splashscreen?format=webp&foregroundLayer=1&quality=33&width=3840&height=2160&blur=2");
 #     --extraCardButtonsVisibility: block;
 #     --overlayPlayButtonPosition: 50%;
