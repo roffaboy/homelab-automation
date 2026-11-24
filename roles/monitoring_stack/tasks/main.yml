@@ -102,16 +102,25 @@
   notify: Restart homepage
   tags: homepage  # also with --tags homepage, like the tiles (app_config)
 
-- name: Deploy the Homepage widgets and look
+- name: Deploy the Homepage widgets
   ansible.builtin.copy:
-    src: "homepage/{{ item }}"
-    dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/{{ item }}"
+    src: homepage/widgets.yaml
+    dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/widgets.yaml"
     owner: "{{ homelab_uid }}"
     group: "{{ homelab_gid }}"
     mode: "0644"
-  loop:
-    - widgets.yaml
-    - custom.css
+  when: homelab_homepage | bool
+  notify: Restart homepage
+  tags: homepage
+
+# The look (homelab_homepage_custom_theme) and the two rules that shape the tiles.
+- name: Deploy Homepage's custom CSS
+  ansible.builtin.template:
+    src: homepage-custom.css.j2
+    dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/custom.css"
+    owner: "{{ homelab_uid }}"
+    group: "{{ homelab_gid }}"
+    mode: "0644"
   when: homelab_homepage | bool
   notify: Restart homepage
   tags: homepage
