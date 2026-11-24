@@ -167,3 +167,26 @@
     | selectattr('external_username', 'equalto', app_config_suggestarr_jellyfin_user) | list | length == 0
   changed_when: true
   no_log: true
+
+# Left alone, the first job suggests for everyone with a Jellyfin history, so a second person gets
+# suggestions of their own to approve. It is kept to the Jellyfin user above.
+- name: SuggestArr | Its first job only for that Jellyfin user
+  vars:
+    _user: >-
+      {{ _app_config_suggestarr_jf_users.json
+         | selectattr('Name', 'equalto', app_config_suggestarr_jellyfin_user) | first }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.suggestarr }}/api/jobs/{{ item.id }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
+    body_format: json
+    body:
+      user_ids:
+        - "{{ _user.Id }}"
+  loop: "{{ _app_config_suggestarr_jobs.json.jobs | selectattr('name', 'equalto', 'Default Automation') }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.user_ids | default([]) != [_user.Id]
+  changed_when: true
+  no_log: true
