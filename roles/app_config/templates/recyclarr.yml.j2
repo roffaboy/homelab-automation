@@ -1,19 +1,21 @@
 # yaml-language-server: $schema=https://schemas.recyclarr.dev/v8/config-schema.json
 # {{ ansible_managed }}
 # Based on the official TRaSH templates:
-#   radarr: hd-bluray-web            https://trash-guides.info/Radarr/radarr-setup-quality-profiles/#hd-bluray-web
+#   radarr: uhd-bluray-web           https://trash-guides.info/Radarr/radarr-setup-quality-profiles/
 #   sonarr: web-1080p-alternative    https://trash-guides.info/Sonarr/sonarr-setup-quality-profiles/
-# The main profile is named {{ app_config_quality_profile }} (the Seerr default). The WEB-only
-# profile is a smaller choice. No Remux or 2160p profiles: those files are 20-80 GB.
-{% macro sizes() %}
+# One profile per app, named {{ app_config_quality_profiles.radarr }} and {{ app_config_quality_profiles.sonarr }} (the Seerr defaults). Movies take the best
+# there is and fall back: 2160p, then 1080p, then 720p, up to the sizes of app_config_recyclarr_sizes.
+# No Remux: those files are 20-80 GB.
+{% macro sizes(kind) %}
       qualities:
-{% for q in app_config_recyclarr_small_qualities %}
+{% for q in app_config_profile_qualities[kind] + app_config_profile_extra_sizes[kind] %}
+{% set res = '2160p' if '2160p' in q else ('1080p' if '1080p' in q else '720p') %}
         - name: {{ q }}
 {% if not app_config_recyclarr_block_x265_hd | bool %}
           min: {{ app_config_recyclarr_x265_min_size }}
 {% endif %}
-          preferred: {{ app_config_recyclarr_preferred_size }}
-          max: {{ app_config_recyclarr_max_size['1080p' if '1080p' in q else '720p'] }}
+          preferred: {{ app_config_recyclarr_sizes[kind].preferred[res] }}
+          max: {{ app_config_recyclarr_sizes[kind].max[res] }}
 {% endfor %}
 {% endmacro %}
 
@@ -25,19 +27,32 @@ radarr:
 
     quality_definition:
       type: movie
-{{ sizes() }}
+{{ sizes('movie') }}
     quality_profiles:
-      - trash_id: d1d67249d3890e49bc12e275d989a7e9  # HD Bluray + WEB
-        name: {{ app_config_quality_profile }}
+      - trash_id: {{ app_config_trash_profiles.radarr }}  # UHD Bluray + WEB, with 1080p and 720p below it
+        name: {{ app_config_quality_profiles.radarr }}
+        # Best first: a release of a lower quality is taken when there is none of a higher one.
+        qualities:
+          - name: Bluray-2160p
+          - name: WEB 2160p
+            qualities:
+              - WEBDL-2160p
+              - WEBRip-2160p
+          - name: Bluray-1080p
+          - name: WEB 1080p
+            qualities:
+              - WEBDL-1080p
+              - WEBRip-1080p
+          - name: Bluray-720p
+          - name: WEB 720p
+            qualities:
+              - WEBDL-720p
+              - WEBRip-720p
         reset_unmatched_scores:
           enabled: true
         upgrade:
           allowed: {{ app_config_recyclarr_upgrades | bool | lower }}
-      - trash_id: e8c5acb741363a0dbda67d3978f4912f  # WEB 1080p
-        reset_unmatched_scores:
-          enabled: true
-        upgrade:
-          allowed: {{ app_config_recyclarr_upgrades | bool | lower }}
+          until_quality: Bluray-2160p
 
     custom_format_groups:
       add:
@@ -63,15 +78,10 @@ sonarr:
 
     quality_definition:
       type: series
-{{ sizes() }}
+{{ sizes('series') }}
     quality_profiles:
-      - trash_id: 9d142234e45d6143785ac55f5a9e8dc9  # WEB-1080p (Alternative): WEB + Bluray 720p/1080p
-        name: {{ app_config_quality_profile }}
-        reset_unmatched_scores:
-          enabled: true
-        upgrade:
-          allowed: {{ app_config_recyclarr_upgrades | bool | lower }}
-      - trash_id: 72dae194fc92bf828f32cde7744e51a1  # WEB-1080p: WEB 1080p only
+      - trash_id: {{ app_config_trash_profiles.sonarr }}  # WEB-1080p (Alternative): WEB + Bluray 720p/1080p
+        name: {{ app_config_quality_profiles.sonarr }}
         reset_unmatched_scores:
           enabled: true
         upgrade:
