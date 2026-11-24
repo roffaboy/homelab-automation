@@ -25,6 +25,10 @@ services:
     volumes:
       - {{ homelab_stack_dirs.media }}/appdata/jellyfin:/config
       - {{ homelab_data_dir }}/media:/data/media:ro
+{% if homelab_jellyfin_theme | length > 0 %}
+      # Runs on every start, so the theme stays the default after an update of the image.
+      - {{ homelab_stack_dirs.media }}/jellyfin-theme.sh:/custom-cont-init.d/jellyfin-theme:ro
+{% endif %}
     ports:
       - "{{ homelab_publish_ip }}:{{ homelab_ports.jellyfin }}:8096"
     healthcheck:

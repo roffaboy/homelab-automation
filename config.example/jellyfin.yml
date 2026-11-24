@@ -17,7 +17,8 @@
 
 # Custom CSS for Jellyfin's web interface (and the TV apps built on it), for example a theme from a
 # repository, a version at a time; set on every run. Empty leaves what is set in Jellyfin.
-# Holyfin (github.com/roffaboy/holyfin) is a dark theme in the look of HolyArrs:
+# Holyfin (github.com/roffaboy/holyfin) is a dark and a light theme in the look of HolyArrs; which
+# one shows is Jellyfin's own Theme setting (homelab_jellyfin_theme in settings.yml sets the default):
 # app_config_jellyfin_css: |
 #   @import url("https://cdn.jsdelivr.net/gh/roffaboy/holyfin@v0.1.0/theme.css");
 

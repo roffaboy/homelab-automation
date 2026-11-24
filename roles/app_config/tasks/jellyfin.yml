@@ -217,7 +217,9 @@
       when: _user.PrimaryImageTag is not defined
       changed_when: true
 
-    # The web app keeps each user's home screen as its display preferences ("emby").
+    # The web app keeps each user's home screen and Dashboard theme as its display preferences
+    # ("emby"). The theme of the app itself is kept by each browser; homelab_jellyfin_theme only
+    # sets what a browser starts with (media_stack).
     - name: Jellyfin | Read the home screens
       ansible.builtin.uri:
         url: "{{ app_config_urls.jellyfin }}/DisplayPreferences/usersettings?userId={{ item.Id }}&client=emby"
@@ -230,14 +232,16 @@
         label: "{{ item.Name }}"
       register: _app_config_jf_home
       check_mode: false
-      when: app_config_jellyfin_home | length > 0
+      when: app_config_jellyfin_home | length > 0 or homelab_jellyfin_theme | length > 0
 
-    - name: Jellyfin | Home screen
+    - name: Jellyfin | Home screen and Dashboard theme
       vars:
         _rows: >-
           {{ dict(range(10) | map('string') | map('regex_replace', '^', 'homesection')
-                  | zip(app_config_jellyfin_home + ['none'] * 10)) }}
-        _prefs: "{{ item.json | combine({'CustomPrefs': _rows}, recursive=true) }}"
+                  | zip(app_config_jellyfin_home + ['none'] * 10))
+             if app_config_jellyfin_home | length > 0 else {} }}
+        _theme: "{{ {'dashboardTheme': homelab_jellyfin_theme} if homelab_jellyfin_theme | length > 0 else {} }}"
+        _prefs: "{{ item.json | combine({'CustomPrefs': _rows | combine(_theme)}, recursive=true) }}"
       ansible.builtin.uri:
         url: "{{ app_config_urls.jellyfin }}/DisplayPreferences/usersettings?userId={{ item.item.Id }}&client=emby"
         method: POST

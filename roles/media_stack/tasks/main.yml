@@ -18,6 +18,15 @@
     - appdata/bazarr
     - appdata/suggestarr
 
+- name: Deploy Jellyfin's theme script
+  ansible.builtin.template:
+    src: jellyfin-theme.sh.j2
+    dest: "{{ homelab_stack_dirs.media }}/jellyfin-theme.sh"
+    owner: "{{ homelab_uid }}"
+    group: "{{ homelab_gid }}"
+    mode: "0755"
+  when: homelab_jellyfin_theme | length > 0
+
 - name: Deploy docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2
