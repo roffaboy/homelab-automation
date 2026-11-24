@@ -1,0 +1,323 @@
+---
+# HolyArrs from scratch, nothing imported from the other apps: your login, Jellyfin, qBittorrent (a
+# category of its own), Prowlarr's indexers and the library folders. Each is added when missing;
+# what you change in HolyArrs itself (Pick rules, people, ...) is kept. The API is /api/v1; a
+# session cookie and its CSRF token go with every change.
+
+- name: HolyArrs | Wait for it to start
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/healthz"
+  register: _app_config_hs_up
+  until: _app_config_hs_up.status == 200
+  retries: 30
+  delay: 2
+  check_mode: false
+
+# 401 is a wrong login, or no account yet: then the first visit makes it (the owner).
+- name: HolyArrs | Log in
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/auth/login"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ homelab_username }}"
+      password: "{{ homelab_password }}"
+    status_code:
+      - 200
+      - 401
+  register: _app_config_hs_login
+  check_mode: false
+  no_log: true
+
+- name: HolyArrs | Your login
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/auth/setup"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ homelab_username }}"
+      password: "{{ homelab_password }}"
+    status_code:
+      - 200
+      - 201
+  register: _app_config_hs_setup
+  when: _app_config_hs_login.status == 401
+  changed_when: true
+  no_log: true
+
+- name: HolyArrs | Remember the session
+  vars:
+    _session: "{{ _app_config_hs_setup if _app_config_hs_login.status == 401 else _app_config_hs_login }}"
+  ansible.builtin.set_fact:
+    _app_config_hs_headers:
+      Cookie: "{{ _session.cookies_string | default('') }}"
+      X-CSRF-Token: "{{ _session.json.csrf | default('') }}"
+  no_log: true
+
+- name: HolyArrs | Read what is set up
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/{{ item }}"
+    headers: "{{ _app_config_hs_headers }}"
+  loop:
+    - library-folders
+    - downloaders
+    - media-servers
+    - bridges
+    - pick-rules
+    - alerts
+    - settings/title-defaults
+    - settings/naming
+  register: _app_config_hs_read
+  check_mode: false
+  no_log: true
+
+- name: HolyArrs | Remember it
+  ansible.builtin.set_fact:
+    _app_config_hs: >-
+      {{ dict(_app_config_hs_read.results | map(attribute='item')
+              | zip(_app_config_hs_read.results | map(attribute='json'))) }}
+  no_log: true
+
+# Subtitles is a part of HolyArrs that can be off (then its routes answer 409, "this part is off"),
+# as the first-run wizard may leave it. It is turned on here, because Bazarr's job is part of the
+# comparison; app_config_holyarrs_subtitles: false leaves it as it is and skips the subtitle setup.
+- name: HolyArrs | Is Subtitles on
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/settings/subtitles"
+    headers: "{{ _app_config_hs_headers }}"
+    status_code:
+      - 200
+      - 409
+  register: _app_config_hs_subs
+  when: app_config_holyarrs_subtitles | bool
+  check_mode: false
+  no_log: true
+
+- name: HolyArrs | Turn Subtitles on
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/parts/subtitles/on"
+    method: POST
+    headers: "{{ _app_config_hs_headers }}"
+  when:
+    - app_config_holyarrs_subtitles | bool
+    - _app_config_hs_subs.status == 409
+  changed_when: true
+
+- name: HolyArrs | Read the subtitle setup
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/{{ item }}"
+    headers: "{{ _app_config_hs_headers }}"
+  loop:
+    - subtitle-sites
+    - settings/subtitles
+  register: _app_config_hs_subs_read
+  when: app_config_holyarrs_subtitles | bool
+  check_mode: false
+  no_log: true
+
+- name: HolyArrs | Remember the subtitle setup
+  ansible.builtin.set_fact:
+    _app_config_hs: >-
+      {{ _app_config_hs | combine(dict(_app_config_hs_subs_read.results | map(attribute='item')
+                                       | zip(_app_config_hs_subs_read.results | map(attribute='json')))) }}
+  when: app_config_holyarrs_subtitles | bool
+  no_log: true
+
+- name: HolyArrs | Library folders
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/library-folders"
+    method: POST
+    headers: "{{ _app_config_hs_headers }}"
+    body_format: json
+    body: "{{ item }}"
+    status_code: 201
+  loop: "{{ app_config_holyarrs_folders }}"
+  loop_control:
+    label: "{{ item.path }}"
+  when: item.path not in _app_config_hs['library-folders'].library_folders | map(attribute='path')
+  changed_when: true
+
+# Its own category, so the downloads of Radarr and Sonarr stay apart. Same /data paths as
+# qBittorrent, so no path mapping.
+- name: HolyArrs | qBittorrent
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/downloaders"
+    method: POST
+    headers: "{{ _app_config_hs_headers }}"
+    body_format: json
+    body:
+      kind: qbittorrent
+      name: qBittorrent
+      url: http://gluetun:{{ homelab_ports.qbittorrent }}
+      username: "{{ homelab_username }}"
+      secret: "{{ homelab_password }}"
+      category: holyarrs
+      allow_local_network: true
+    status_code: 201
+  when: "'qbittorrent' not in _app_config_hs.downloaders.downloaders | map(attribute='kind')"
+  changed_when: true
+  no_log: true
+
+# Jellyfin hears about imports, renames and deletes. The API key is the one Radarr and Sonarr use.
+- name: HolyArrs | Jellyfin
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/media-servers"
+    method: POST
+    headers: "{{ _app_config_hs_headers }}"
+    body_format: json
+    body:
+      kind: jellyfin
+      name: Jellyfin
+      url: http://jellyfin:8096
+      token: "{{ _app_config_jellyfin_api_key }}"
+      web_url: "http://{{ homelab_lan_ip }}:{{ homelab_ports.jellyfin }}"
+      allow_local_network: true
+    status_code: 201
+  when:
+    - _app_config_jellyfin_api_key is defined   # set by jellyfin.yml
+    - "'jellyfin' not in _app_config_hs['media-servers'].media_servers | map(attribute='kind')"
+  changed_when: true
+  no_log: true
+
+# Prowlarr pushes its indexers to HolyArrs, which is added to Prowlarr as an app.
+- name: HolyArrs | Prowlarr
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/bridges"
+    method: POST
+    headers: "{{ _app_config_hs_headers }}"
+    body_format: json
+    body:
+      kind: prowlarr
+      url: http://prowlarr:9696
+      key: "{{ _app_config_api_keys.prowlarr }}"
+      callback_url: http://holyarrs:6262
+    status_code: 201
+  when:
+    - app_config_holyarrs_link_prowlarr | bool
+    - "'prowlarr' not in _app_config_hs.bridges.bridges | map(attribute='kind')"
+  changed_when: true
+  no_log: true
+
+# What Radarr, Sonarr, Recyclarr and Bazarr are set up to do, so the two can be compared one to one:
+# the quality profiles (and per language) as Pick rules with TRaSH's scores, the subtitles, the names
+# and Telegram. Each is made when missing; what you change afterwards in HolyArrs is kept.
+- name: HolyArrs | Pick rules
+  ansible.builtin.include_tasks: holyarrs_rules.yml
+  loop: >-
+    {{ ['movie', 'show'] | product([{'name': ''}] + app_config_language_profiles) | list
+       + ([['movie', {'name': '', 'full': app_config_recyclarr_uhd_profile}]] if app_config_recyclarr_uhd | bool else []) }}
+  loop_control:
+    loop_var: _app_config_hs_pair
+    label: "{{ _app_config_hs_pair.0 }}: {{ _app_config_hs_pair.1.full | default(_app_config_hs_pair.1.name or app_config_quality_profile) }}"
+
+- name: HolyArrs | Read the Pick rules again
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/pick-rules"
+    headers: "{{ _app_config_hs_headers }}"
+  register: _app_config_hs_rules
+  check_mode: false
+  no_log: true
+
+# The main set of each kind is what a new movie or show gets; it is only set while still unset.
+- name: HolyArrs | Movies and series start with them
+  vars:
+    _ids: >-
+      {{ dict(_app_config_hs_rules.json.pick_rules | map(attribute='name')
+              | zip(_app_config_hs_rules.json.pick_rules | map(attribute='id'))) }}
+    _current: "{{ _app_config_hs['settings/title-defaults'] }}"
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/settings/title-defaults"
+    method: PUT
+    headers: "{{ _app_config_hs_headers }}"
+    body_format: json
+    body:
+      movie: >-
+        {{ _current.movie | combine({'pick_rules_id': _ids[app_config_quality_profile ~ ' (Movies)']}) }}
+      show: >-
+        {{ _current.show | combine({'pick_rules_id': _ids[app_config_quality_profile ~ ' (Series)']}) }}
+  when: _current.movie.pick_rules_id == 0 and _current.show.pick_rules_id == 0
+  changed_when: true
+
+# Bazarr's languages (while none are set), the subtitles inside the files, and the sites. Subf2m
+# and Subsource have no HolyArrs counterpart; Podnapisi starts off there.
+- name: HolyArrs | Subtitle languages
+  vars:
+    # One entry per language of Bazarr's profile: not for hearing impaired, not forced only.
+    _languages: >-
+      {{ ('[' ~ (app_config_bazarr_profile.languages
+                 | map('regex_replace', '^(.*)$', '{"language": "\\1", "hearing_impaired": "normal", "forced": false}')
+                 | join(',')) ~ ']') | from_json }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/settings/subtitles"
+    method: PUT
+    headers: "{{ _app_config_hs_headers }}"
+    body_format: json
+    body: "{{ _app_config_hs['settings/subtitles'] | combine({'use_built_in': true, 'languages': _languages}) }}"
+  when:
+    - app_config_holyarrs_subtitles | bool
+    - _app_config_hs['settings/subtitles'].languages | length == 0
+  changed_when: true
+
+- name: HolyArrs | Subtitle sites
+  vars:
+    _sites: >-
+      {{ [{'kind': 'gestdown', 'name': 'Gestdown'}]
+         + ([{'kind': 'subdl', 'name': 'subdl', 'api_key': app_config_subdl_api_key}]
+            if app_config_subdl_api_key != '' else [])
+         + ([{'kind': 'opensubtitles', 'name': 'OpenSubtitles.com',
+              'api_key': app_config_holyarrs_opensubtitles_api_key,
+              'username': app_config_opensubtitles_username,
+              'password': app_config_opensubtitles_password}]
+            if app_config_holyarrs_opensubtitles_api_key != '' and app_config_opensubtitles_username != ''
+               and app_config_opensubtitles_password != '' else []) }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/subtitle-sites"
+    method: POST
+    headers: "{{ _app_config_hs_headers }}"
+    body_format: json
+    body: "{{ item | combine({'enabled': true}) }}"
+    status_code: 201
+  loop: "{{ _sites }}"
+  loop_control:
+    label: "{{ item.kind }}"
+  when:
+    - app_config_holyarrs_subtitles | bool
+    - item.kind not in _app_config_hs['subtitle-sites'].sites | map(attribute='kind')
+  changed_when: true
+  no_log: true
+
+# Radarr's and Sonarr's Jellyfin naming (Recyclarr: jellyfin-imdb and jellyfin-tvdb), while the
+# patterns are still HolyArrs' own.
+- name: HolyArrs | Names that Jellyfin matches
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/settings/naming"
+    method: PUT
+    headers: "{{ _app_config_hs_headers }}"
+    body_format: json
+    body: >-
+      {{ _app_config_hs['settings/naming'].naming
+         | combine({'folder_pattern': '{title} ({year}) [imdbid-{imdb}]',
+                    'file_pattern': '{title} ({year}) [imdbid-{imdb}] - {quality_title}',
+                    'show_folder_pattern': '{title} ({year}) [tvdbid-{tvdb}]'}) }}
+  when: _app_config_hs['settings/naming'].naming.folder_pattern == '{title} ({year})'
+  changed_when: true
+
+- name: HolyArrs | Telegram
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.holyarrs }}/api/v1/alerts"
+    method: POST
+    headers: "{{ _app_config_hs_headers }}"
+    body_format: json
+    body:
+      kind: telegram
+      name: Telegram
+      bot_token: "{{ homelab_telegram_bot_token }}"
+      chat_id: "{{ homelab_telegram_chat_id }}"
+      enabled: true
+      moments: "{{ app_config_holyarrs_telegram_moments }}"
+    status_code: 201
+  when:
+    - homelab_telegram | bool
+    - "'telegram' not in _app_config_hs.alerts.alerts | map(attribute='kind')"
+  changed_when: true
+  no_log: true

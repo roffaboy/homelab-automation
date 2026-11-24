@@ -105,7 +105,7 @@ Choose in `config/settings.yml`, then run the playbook again.
 | No start page | `homelab_homepage: false` |
 | No ebooks | `homelab_books: false` |
 | Suggestions | `homelab_suggestarr: true`, then set it up at `:5000` (below) |
-| Try HolyArrs | `homelab_holyarrs: true`, then open `:6262`. It reads your library read-only and isn't connected to qBittorrent; in Settings, Import from other apps, add Radarr (`http://radarr:7878`) and Sonarr (`http://sonarr:8989`) with their API keys |
+| Try HolyArrs | `homelab_holyarrs: true`, then open `:6262` and log in with your usual login. It runs next to Radarr and Sonarr with a library of its own (`media-data/holyarrs`, two extra libraries in Jellyfin), its own qBittorrent category and Prowlarr's indexers, nothing imported; your own library is read-only for it. `homelab_holyarrs: false` stops it again; its data stays |
 | Other subtitle languages | `app_config_bazarr_profile: { name: German and English, languages: [de, en] }` |
 | Indexers | `config/indexers.yml`, or add them in Prowlarr (those are kept) |
 | More settings | Any setting in `inventory/group_vars/homelab/main.yml` or `roles/*/defaults/main.yml` |

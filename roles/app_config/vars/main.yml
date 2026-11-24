@@ -13,6 +13,7 @@ app_config_urls:
   cleanuparr: "http://127.0.0.1:{{ homelab_ports.cleanuparr }}"
   maintainerr: "http://127.0.0.1:{{ homelab_ports.maintainerr }}"
   suggestarr: "http://127.0.0.1:{{ homelab_ports.suggestarr }}"
+  holyarrs: "http://127.0.0.1:{{ homelab_ports.holyarrs }}"
 
 # API version, Compose stack, and the config file holding the API key each app generates.
 app_config_servarr:
@@ -72,6 +73,11 @@ app_config_recyclarr_small_qualities:
   - WEBDL-1080p
   - WEBRip-1080p
   - Bluray-1080p
+app_config_recyclarr_uhd_qualities:
+  - WEBDL-2160p
+  - WEBRip-2160p
+  - Bluray-2160p
+app_config_trash_uhd_profile: 64fb5f9858489bdac2af690e27c8f42f   # UHD Bluray + WEB
 
 # Profiles Radarr and Sonarr create on install (HD-1080p is kept: Recyclarr fills it).
 app_config_stock_profiles:
@@ -80,3 +86,75 @@ app_config_stock_profiles:
   - HD-720p
   - Ultra-HD
   - HD - 720p/1080p
+
+# HolyArrs' quality ladder, low to high, and what Radarr and Sonarr call each step.
+app_config_holyarrs_ladder:
+  - cam
+  - telesync
+  - sd_tv
+  - sd_dvd
+  - 720p_tv
+  - 720p_web
+  - 720p_bluray
+  - 1080p_tv
+  - 1080p_web
+  - 1080p_bluray
+  - 1080p_remux
+  - 2160p_web
+  - 2160p_bluray
+  - 2160p_remux
+app_config_holyarrs_steps:
+  SDTV: sd_tv
+  DVD: sd_dvd
+  HDTV-720p: 720p_tv
+  WEBDL-720p: 720p_web
+  WEBRip-720p: 720p_web
+  WEB 720p: 720p_web
+  Bluray-720p: 720p_bluray
+  HDTV-1080p: 1080p_tv
+  WEBDL-1080p: 1080p_web
+  WEBRip-1080p: 1080p_web
+  WEB 1080p: 1080p_web
+  Bluray-1080p: 1080p_bluray
+  WEBDL-2160p: 2160p_web
+  WEBRip-2160p: 2160p_web
+  Bluray-2160p: 2160p_bluray
+# Language names as Radarr and Sonarr list them, and HolyArrs' codes.
+app_config_holyarrs_languages:
+  English: en
+  French: fr
+  German: de
+  Italian: it
+  Spanish: es
+  Russian: ru
+  Japanese: ja
+  Korean: ko
+  Polish: pl
+  Dutch: nl
+  Portuguese: pt
+  Swedish: sv
+  Danish: da
+  Norwegian: 'no'
+  Finnish: fi
+  Czech: cs
+  Hungarian: hu
+  Greek: el
+  Hebrew: he
+  Turkish: tr
+  Arabic: ar
+  Hindi: hi
+  Chinese: zh
+  Thai: th
+  Vietnamese: vi
+  Ukrainian: uk
+# The TRaSH profiles Recyclarr uses (templates/recyclarr.yml.j2), applied to HolyArrs' Pick rules
+# so every release gets the same scores.
+app_config_holyarrs_trash:
+  movie:
+    app: radarr
+    profile: d1d67249d3890e49bc12e275d989a7e9   # HD Bluray + WEB
+    label: Movies
+  show:
+    app: sonarr
+    profile: 9d142234e45d6143785ac55f5a9e8dc9   # WEB-1080p (Alternative)
+    label: Series

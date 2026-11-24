@@ -21,6 +21,22 @@
     - "{{ homelab_data_dir }}/media/movies"
     - "{{ homelab_data_dir }}/media/series"
 
+# HolyArrs (homelab_holyarrs) works in a tree of its own, next to the one Radarr and Sonarr use: its
+# library, and a download folder of its own in qBittorrent, on the same disk so imports are hardlinks.
+- name: Ensure the HolyArrs folders exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ homelab_uid }}"
+    group: "{{ homelab_gid }}"
+    mode: "0775"
+  loop:
+    - "{{ homelab_data_dir }}/holyarrs"
+    - "{{ homelab_data_dir }}/holyarrs/movies"
+    - "{{ homelab_data_dir }}/holyarrs/series"
+    - "{{ homelab_data_dir }}/torrents/holyarrs"
+  when: homelab_holyarrs | bool
+
 # What the backup, its weekly check and the automatic deploys share (roles/backup, roles/autodeploy).
 - name: Create the folder for the shared scripts
   ansible.builtin.file:

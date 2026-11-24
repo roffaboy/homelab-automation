@@ -25,6 +25,9 @@ services:
     volumes:
       - {{ homelab_stack_dirs.media }}/appdata/jellyfin:/config
       - {{ homelab_data_dir }}/media:/data/media:ro
+{% if homelab_holyarrs | bool %}
+      - {{ homelab_data_dir }}/holyarrs:/data/holyarrs:ro
+{% endif %}
     ports:
       - "{{ homelab_publish_ip }}:{{ homelab_ports.jellyfin }}:8096"
     healthcheck:
@@ -157,9 +160,9 @@ services:
 
 {% endif %}
 {% if homelab_holyarrs | bool %}
-  # HolyArrs, one app for what Radarr, Sonarr, Prowlarr, Bazarr and Seerr do. Here to try it: the
-  # library is read-only and there is no downloads folder, so it can import your Radarr and Sonarr
-  # setup (it only reads them) but not touch a file. Not connected to qBittorrent.
+  # HolyArrs, one app for what Radarr, Sonarr, Prowlarr, Bazarr and Seerr do. Here to try it next to
+  # them: it gets the data folder (its own library in holyarrs/, its downloads in torrents/holyarrs)
+  # but your own library, media/, is read-only for it. app_config connects it from scratch.
   holyarrs:
     image: {{ media_stack_images.holyarrs }}
     environment:
@@ -168,8 +171,8 @@ services:
       TZ: {{ homelab_tz }}
     volumes:
       - {{ homelab_stack_dirs.media }}/appdata/holyarrs:/config
-      - {{ homelab_data_dir }}/media/movies:/movies:ro
-      - {{ homelab_data_dir }}/media/series:/tv:ro
+      - {{ homelab_data_dir }}:/data
+      - {{ homelab_data_dir }}/media:/data/media:ro
     ports:
       - "{{ homelab_publish_ip }}:{{ homelab_ports.holyarrs }}:6262"
     restart: unless-stopped

@@ -106,7 +106,7 @@
         status_code:
           - 200
           - 204
-      loop: "{{ app_config_jellyfin_libraries }}"
+      loop: "{{ app_config_jellyfin_libraries + (app_config_holyarrs_jellyfin_libraries if homelab_holyarrs | bool else []) }}"
       loop_control:
         label: "{{ item.name }}"
       when: item.name not in _app_config_jf_libraries.json | map(attribute='Name')

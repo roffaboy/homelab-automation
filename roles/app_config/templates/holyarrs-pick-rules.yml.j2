@@ -1,0 +1,61 @@
+# Body of one HolyArrs Pick rules set, from the same choices as Recyclarr's profile: the qualities
+# of app_config_recyclarr_small_qualities (plus the language profile's), the sizes in MB per minute
+# (app_config_recyclarr_sizes, movies and series apart),
+# and for a language only releases in that language. The scores come from TRaSH afterwards.
+{% set mb = 1048576 %}
+{% set sizes = app_config_recyclarr_sizes['movie' if _app_config_hs_pair.0 == 'movie' else 'series'] %}
+{% set best = '2160p' if '2160p_web' in _app_config_hs_allowed else '1080p' %}
+steps:
+{% for q in app_config_holyarrs_ladder %}
+  - quality: {{ q }}
+    allowed: {{ (q in _app_config_hs_allowed) | lower }}
+{% endfor %}
+good_enough_at: {{ best }}_web
+equal_steps:
+  - - {{ best }}_web
+    - {{ best }}_bluray
+traits: []
+must_have: []
+never:
+  - sample
+  - executable
+  - password_protected
+  - disc_image
+  - hardcoded_subs
+  - 3d
+  - cam
+  - telesync
+min_points: 0
+upgrade_min_points: 1
+size_limits:
+{% for q in _app_config_hs_allowed %}
+  {{ q }}:
+    per_minute: true
+{% if q.startswith('sd_') %}
+    min: 0
+    max: {{ 100 * mb }}
+{% else %}
+    min: {{ (0 if app_config_recyclarr_block_x265_hd | bool else app_config_recyclarr_x265_min_size) * mb }}
+    preferred: {{ sizes['preferred_2160p' if q.startswith('2160p') else 'preferred'] * mb }}
+    max: {{ sizes.max[q.split('_')[0]] * mb }}
+{% endif %}
+{% endfor %}
+protocol:
+  prefer: torrent
+  wait_minutes_torrent: 0
+  wait_minutes_usenet: 0
+  skip_wait_at_good_enough: false
+language:
+{% if _app_config_hs_languages | length > 0 %}
+  wanted:
+{% for l in _app_config_hs_languages %}
+    - {{ l }}
+{% endfor %}
+  original_ok: false
+{% else %}
+  wanted: []
+  original_ok: true
+{% endif %}
+order: quality_then_points
+proper_policy:
+  mode: take_any
