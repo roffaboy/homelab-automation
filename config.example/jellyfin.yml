@@ -15,10 +15,11 @@
 # app_config_jellyfin_images:
 #   admin: images/admin.jpg
 
-# Custom CSS for Jellyfin's web interface (and the TV apps built on it), for example your own theme
-# from a repository; set on every run. Empty leaves what is set in Jellyfin.
+# Custom CSS for Jellyfin's web interface (and the TV apps built on it), for example a theme from a
+# repository, a version at a time; set on every run. Empty leaves what is set in Jellyfin.
+# Holyfin (github.com/roffaboy/holyfin) is a dark theme in the look of HolyArrs:
 # app_config_jellyfin_css: |
-#   @import url("https://cdn.jsdelivr.net/gh/<user>/<repo>@<tag>/theme.css");
+#   @import url("https://cdn.jsdelivr.net/gh/roffaboy/holyfin@v0.1.0/theme.css");
 
 # Plugins from Jellyfin's catalog (Dashboard, Plugins, Catalog), by name; installed when missing.
 # By default Intro Skipper and Jellyfin Enhanced, plus Simkl with vault_simkl_client_id: log in
