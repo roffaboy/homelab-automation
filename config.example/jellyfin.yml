@@ -49,7 +49,7 @@
 #     --btnSubmitBorderColor: #e5e5e5;
 #     --checkboxCheckedBgColor: #e50914;
 #     --highlightOutlineColor: #e50914;
-#     --cardHoverBorderColor: #e50914;
+#     --cardHoverBorderColor: rgba(229, 9, 20, .55);
 #     --cardResumeProgressColor: #e50914;
 #     --osdSeekBarPlayedColor: #e50914;
 #   }
@@ -59,10 +59,17 @@
 #   .upNextContainer .btnStartNow {
 #     color: #141414 !important;
 #   }
-#   /* The border of the card you point at or tab to: ElegantFin makes it white. */
+#   /* The card you point at or tab to: a thin red edge and a soft red glow, eased in. */
+#   .cardScalable,
+#   .visualCardBox {
+#     transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease;
+#   }
+#   .card-hoverable:hover .cardScalable,
+#   .card-hoverable:hover .visualCardBox,
 #   .card:focus .cardBox.visualCardBox,
 #   .card:focus .cardBox:not(.visualCardBox) .cardScalable {
-#     border-color: #e50914 !important;
+#     border-color: rgba(229, 9, 20, .55) !important;
+#     box-shadow: 0 12px 32px rgba(229, 9, 20, .28), 0 0 0 1px rgba(229, 9, 20, .35) !important;
 #   }
 
 # Plugins from Jellyfin's catalog (Dashboard, Plugins, Catalog), by name; installed when missing.
