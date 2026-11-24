@@ -45,13 +45,19 @@
 #     --dimTextColor: #b3b3b3;
 #     --accentColor: #e50914;
 #     --accentHoverColor: #f6121d;
-#     --btnSubmitColor: #b20710;
-#     --btnSubmitBorderColor: #e50914;
+#     --btnSubmitColor: #d1d1d1;
+#     --btnSubmitBorderColor: #e5e5e5;
 #     --checkboxCheckedBgColor: #e50914;
 #     --highlightOutlineColor: #e50914;
 #     --cardHoverBorderColor: #e50914;
 #     --cardResumeProgressColor: #e50914;
 #     --osdSeekBarPlayedColor: #e50914;
+#   }
+#   /* Light grey buttons (the selected tab, Play All) need dark text. */
+#   .MuiButton-colorPrimary,
+#   .button-submit,
+#   .upNextContainer .btnStartNow {
+#     color: #141414 !important;
 #   }
 #   /* The border of the card you point at or tab to: ElegantFin makes it white. */
 #   .card:focus .cardBox.visualCardBox,
