@@ -40,6 +40,8 @@ homelab_ci: false
 homelab_bazarr: true       # subtitles
 homelab_monitoring: true   # Grafana and Prometheus
 homelab_homepage: true     # a start page with every app
+# Homepage's look, in the style of Holyfin: "dark" or "light" (files/homepage/custom.css has both).
+homelab_homepage_theme: dark
 homelab_books: true        # ebooks, synced to a Kobo
 homelab_suggestarr: false  # suggestions from what you watch
 # Jellyfin's theme: "dark" (Jellyfin's own default, so also what an empty value gives) or "light".

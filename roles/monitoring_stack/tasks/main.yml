@@ -92,6 +92,17 @@
 # services.yaml (the apps and their API keys) and bookmarks.yaml (the accounts) come from
 # app_config (homepage.yml).
 - name: Deploy the Homepage settings
+  ansible.builtin.template:
+    src: homepage-settings.yaml.j2
+    dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/settings.yaml"
+    owner: "{{ homelab_uid }}"
+    group: "{{ homelab_gid }}"
+    mode: "0644"
+  when: homelab_homepage | bool
+  notify: Restart homepage
+  tags: homepage  # also with --tags homepage, like the tiles (app_config)
+
+- name: Deploy the Homepage widgets and look
   ansible.builtin.copy:
     src: "homepage/{{ item }}"
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/{{ item }}"
@@ -99,12 +110,11 @@
     group: "{{ homelab_gid }}"
     mode: "0644"
   loop:
-    - settings.yaml
     - widgets.yaml
     - custom.css
   when: homelab_homepage | bool
   notify: Restart homepage
-  tags: homepage  # also with --tags homepage, like the tiles (app_config)
+  tags: homepage
 
 - name: Deploy docker-compose.yml
   ansible.builtin.template:
