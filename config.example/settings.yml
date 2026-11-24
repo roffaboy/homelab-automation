@@ -32,3 +32,6 @@ homelab_tailscale: true
 # app_config_seerr_discover:
 #   originalLanguage: "nl|en"
 #   streamingRegion: NL
+# Jellyfin users whose requests Seerr approves by itself (everyone else's wait for an admin):
+# app_config_seerr_auto_approve_users:
+#   - viewer
