@@ -28,7 +28,7 @@ download what you are allowed to where you live.
 
 ## Requirements
 
-- One server (a mini PC will do) with Ubuntu Server 26.04, the version CI installs on, and a user
+- One server (a mini PC will do) with Ubuntu Server 24.04 or 26.04 (both LTS; CI installs on both), and a user
   with `sudo`. A fixed address in your router (a DHCP reservation) and internet access.
 - For hardware transcoding, an Intel GPU (`/dev/dri`, VA-API). Without one Jellyfin transcodes in
   software; the playbook notices.
@@ -42,17 +42,19 @@ On that server:
 ```bash
 sudo apt install -y git
 git clone https://github.com/roffaboy/homelab-automation.git && cd homelab-automation
-mkdir ~/homelab-config && cp config.example/* ~/homelab-config/
-nano ~/homelab-config/vault.yml      # your username, a password for the apps, email (see Your configuration)
-nano ~/homelab-config/settings.yml   # which optional apps you want
-./setup.sh
+./setup.sh                                  # a few questions, then it writes ~/homelab-config
 .venv/bin/ansible-playbook provision.yml
 ```
+
+With no configuration yet, `setup.sh` first asks for the login for the apps, an email and which
+optional apps you want, and writes `~/homelab-config/vault.yml` and `settings.yml` (it makes the
+backup password for you). Prefer to write them yourself? Copy `config.example/*` to `~/homelab-config/`
+and fill in `vault.yml` and `settings.yml` first; `setup.sh` then asks nothing.
 
 Optional before `./setup.sh`: the sites Prowlarr searches in `~/homelab-config/indexers.yml`,
 and your VPN's WireGuard config as `~/homelab-config/wg0.conf` (see [Your configuration](#your-configuration)).
 
-`setup.sh` asks nothing. It installs Ansible and Tailscale (unless `homelab_tailscale: false`),
+`setup.sh` installs Ansible and Tailscale (unless `homelab_tailscale: false`),
 links `~/homelab-config` as `config/` and encrypts your secrets with a new vault password,
 which it shows once (save it in your password manager). The playbook then installs everything.
 Both can be run again. Give the server a fixed address in your router first (a DHCP

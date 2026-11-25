@@ -19,7 +19,7 @@ body:
     id: os
     attributes:
       label: Ubuntu version and hardware
-      placeholder: Ubuntu Server 26.04, mini PC with an Intel N100
+      placeholder: Ubuntu Server 24.04, mini PC with an Intel N100
   - type: dropdown
     id: install
     attributes:

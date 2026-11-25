@@ -1,5 +1,5 @@
 # Checks every PR before it gets merged: first ansible-lint, then (only when lint passes, and
-# not for a PR that only changes Markdown) setup.sh and the playbook on a fresh Ubuntu VM. The
+# not for a PR that only changes Markdown) setup.sh and the playbook on a fresh Ubuntu VM, on 24.04 and 26.04. The
 # playbook runs twice: the first run is a fresh install with every app wired up; the second
 # must change nothing. Renovate's image updates are tested this way too.
 # The real configuration isn't here, so lint uses config.example/ and the test dummy values.
@@ -43,12 +43,20 @@ jobs:
           echo ci >.vault_pass
       - uses: ansible/ansible-lint@v26.11.0
 
-  # Ubuntu and the Docker install are the same as on the server; the VM has no VPN (no
-  # wg0.conf), GPU (homelab_ci) or Tailscale. Not again after the merge: the PR already ran it.
-  test:
+  # The install runs on both Ubuntu LTS versions the playbook supports, next to each other. The
+  # Docker install is the same as on a server; the VM has no VPN (no wg0.conf), GPU
+  # (homelab_ci) or Tailscale. Not again after the merge: the PR already ran it.
+  install:
+    name: install (${{ matrix.os }})
     needs: lint
     if: github.event_name == 'pull_request' && needs.lint.outputs.code == 'true'
-    runs-on: ubuntu-26.04  # same as the server
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - ubuntu-26.04
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
       PLAYBOOK: >-
@@ -56,25 +64,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # The way a new user starts (README): configuration filled in, then setup.sh, which installs
-      # Ansible and encrypts the vault with a new password. No Tailscale on the VM.
+      # The way a new user starts (README): init-config.sh asks its questions (answered here from
+      # a pipe), then setup.sh installs Ansible and encrypts the vault with a new password.
+      # Every option on that the VM can run, so a release is tested whole; no Tailscale on the VM.
       - name: Test configuration
         run: |
-          mkdir config
-          cat >config/vault.yml <<'VAULT'
-          vault_homelab_user: runner
-          vault_homelab_password: Test-password-123
-          vault_admin_email: test@example.com
-          vault_backup_password: test
-          vault_tmdb_api_key: test
+          printf '%s\n' runner Test-password-123 test@example.com y y y y y test n |
+            CONFIG_DIR="$PWD/config" ./init-config.sh
+          cat >>config/vault.yml <<'VAULT'
           vault_simkl_client_id: test
           vault_omdb_api_key: test
           VAULT
-          # Every option on that the VM can run, so a release is tested whole.
-          cat >config/settings.yml <<'SETTINGS'
-          homelab_tailscale: false
-          homelab_suggestarr: true
-          SETTINGS
           cp config.example/maintainerr.yml config/   # the example rules are tested too
 
       - name: Setup
@@ -95,3 +95,16 @@ jobs:
           for name in $(docker ps -a --format '{{.Names}}'); do
             echo "::group::$name"; docker logs --tail 50 "$name" 2>&1; echo "::endgroup::"
           done
+
+  # One check for the branch protection to require, whatever the matrix looks like: it passes when
+  # the installs passed or were skipped (a PR that only changes Markdown).
+  test:
+    needs: [lint, install]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installs on every supported Ubuntu
+        run: |
+          echo "lint: ${{ needs.lint.result }}, install: ${{ needs.install.result }}"
+          [ "${{ needs.lint.result }}" = success ] &&
+            { [ "${{ needs.install.result }}" = success ] || [ "${{ needs.install.result }}" = skipped ]; }
