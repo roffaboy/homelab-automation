@@ -43,20 +43,16 @@
   check_mode: false
   no_log: true
 
-- name: SuggestArr | Read the settings
-  ansible.builtin.uri:
+# A save replaces every setting; the module sends the ones you set in SuggestArr along. Its
+# "integrations" are kept by SuggestArr itself and not sent back.
+- name: SuggestArr | Settings
+  rest_settings:
     url: "{{ app_config_urls.suggestarr }}/api/config/fetch"
+    write_url: "{{ app_config_urls.suggestarr }}/api/config/save"
     headers:
       Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
-  register: _app_config_suggestarr_config
-  check_mode: false
-  no_log: true
-
-# A save replaces every setting, so the ones you set in SuggestArr are sent along.
-- name: SuggestArr | Settings
-  vars:
-    _current: "{{ _app_config_suggestarr_config.json | dict2items | rejectattr('key', 'eq', 'integrations') | items2dict }}"
-    _wanted: >-
+    read_only: [integrations]
+    wanted: >-
       {{ app_config_suggestarr_settings | combine({
            'SETUP_COMPLETED': true,
            'SELECTED_SERVICE': 'jellyfin',
@@ -65,59 +61,38 @@
            'SEER_API_URL': 'http://seerr:5055',
            'SEER_TOKEN': _app_config_seerr_key,
            'TMDB_API_KEY': app_config_tmdb_api_key,
-           'SIMKL_CLIENT_ID': app_config_simkl_client_id or _current.SIMKL_CLIENT_ID | default(''),
-         }) | combine({'OMDB_API_KEY': app_config_omdb_api_key, 'FILTER_RATING_SOURCE': 'both'}
+         }) | combine({'SIMKL_CLIENT_ID': app_config_simkl_client_id} if app_config_simkl_client_id else {})
+            | combine({'OMDB_API_KEY': app_config_omdb_api_key, 'FILTER_RATING_SOURCE': 'both'}
                       if app_config_omdb_api_key else {}) }}
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.suggestarr }}/api/config/save"
-    method: POST
-    headers:
-      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
-    body_format: json
-    body: "{{ _current | combine(_wanted) }}"
-  when: _current | combine(_wanted) != _current
-  changed_when: true
   no_log: true
 
 # SuggestArr makes this job at its first start, before it has your filters; it gets them here.
 # Jobs you make yourself are left alone.
-- name: SuggestArr | Read the jobs
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.suggestarr }}/api/jobs"
-    headers:
-      Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
-  register: _app_config_suggestarr_jobs
-  check_mode: false
-  no_log: true
-
 - name: SuggestArr | Your filters in its first job
   vars:
     _s: "{{ app_config_suggestarr_settings }}"
-    _filters: >-
-      {{ item.filters | default({}, true) | combine({
-           'vote_average_gte': _s.FILTER_TMDB_THRESHOLD / 10,
-           'vote_count_gte': _s.FILTER_TMDB_MIN_VOTES,
-           'include_no_rating': _s.FILTER_INCLUDE_NO_RATING,
-           'exclude_downloaded': _s.EXCLUDE_DOWNLOADED,
-           'exclude_requested': _s.EXCLUDE_REQUESTED,
-         }) | combine({
-           'rating_source': 'both',
-           'imdb_rating_gte': _s.FILTER_IMDB_THRESHOLD / 10,
-           'imdb_min_votes': _s.FILTER_IMDB_MIN_VOTES,
-         } if app_config_omdb_api_key else {}) }}
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.suggestarr }}/api/jobs/{{ item.id }}"
-    method: PUT
+  api_resource:
+    url: "{{ app_config_urls.suggestarr }}/api/jobs"
     headers:
       Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
-    body_format: json
-    body:
-      filters: "{{ _filters }}"
-  loop: "{{ _app_config_suggestarr_jobs.json.jobs | selectattr('name', 'equalto', 'Default Automation') }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: _filters != item.filters | default({}, true)
-  changed_when: true
+    list_key: jobs
+    recursive: true
+    partial_update: true
+    wanted:
+      name: Default Automation
+      filters: >-
+        {{ {
+             'vote_average_gte': _s.FILTER_TMDB_THRESHOLD / 10,
+             'vote_count_gte': _s.FILTER_TMDB_MIN_VOTES,
+             'include_no_rating': _s.FILTER_INCLUDE_NO_RATING,
+             'exclude_downloaded': _s.EXCLUDE_DOWNLOADED,
+             'exclude_requested': _s.EXCLUDE_REQUESTED,
+           } | combine({
+             'rating_source': 'both',
+             'imdb_rating_gte': _s.FILTER_IMDB_THRESHOLD / 10,
+             'imdb_min_votes': _s.FILTER_IMDB_MIN_VOTES,
+           } if app_config_omdb_api_key else {}) }}
+  no_log: true
 
 # Whose Jellyfin history your suggestions come from (app_config_suggestarr_jellyfin_user), and
 # with whom your Simkl history is combined.
@@ -175,18 +150,13 @@
     _user: >-
       {{ _app_config_suggestarr_jf_users.json
          | selectattr('Name', 'equalto', app_config_suggestarr_jellyfin_user) | first }}
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.suggestarr }}/api/jobs/{{ item.id }}"
-    method: PUT
+  api_resource:
+    url: "{{ app_config_urls.suggestarr }}/api/jobs"
     headers:
       Authorization: "Bearer {{ _app_config_suggestarr_login.json.access_token }}"
-    body_format: json
-    body:
-      user_ids:
-        - "{{ _user.Id }}"
-  loop: "{{ _app_config_suggestarr_jobs.json.jobs | selectattr('name', 'equalto', 'Default Automation') }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when: item.user_ids | default([]) != [_user.Id]
-  changed_when: true
+    list_key: jobs
+    partial_update: true
+    wanted:
+      name: Default Automation
+      user_ids: ["{{ _user.Id }}"]
   no_log: true

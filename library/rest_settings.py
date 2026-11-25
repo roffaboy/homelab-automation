@@ -27,6 +27,9 @@ options:
     description: Address of the settings object. It is read with GET and written to the same address.
     type: str
     required: true
+  write_url:
+    description: Address the object is saved to, when it is not O(url) (some apps read and save at different addresses).
+    type: str
   headers:
     description: Request headers, for example the API key. Treated as secret.
     type: dict
@@ -149,6 +152,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             url=dict(type="str", required=True),
+            write_url=dict(type="str"),
             headers=dict(type="dict", default={}, no_log=True),
             wanted=dict(type="dict", required=True),
             recursive=dict(type="bool", default=False),
@@ -166,7 +170,7 @@ def main():
         module.exit_json(changed=False)
     diff = changes(current, wanted)
     if not module.check_mode:
-        request(module, p["write_method"], p["url"], p["headers"], without(wanted, p["read_only"]))
+        request(module, p["write_method"], p["write_url"] or p["url"], p["headers"], without(wanted, p["read_only"]))
     module.exit_json(changed=True,
                      diff=dict(before={k: v[0] for k, v in diff.items()}, after={k: v[1] for k, v in diff.items()}))
 

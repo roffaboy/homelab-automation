@@ -1,7 +1,6 @@
 ---
-# Fresh install: your login. Then qBittorrent, Radarr and Sonarr (when missing; existing ones
-# are left as they are) and the queue cleaner: downloads stuck on metadata or stalled are
-# removed, and Radarr/Sonarr blocklist them and search again. Seeding and failed downloads
+# Fresh install: your login. Then qBittorrent, Radarr and Sonarr and the queue cleaner: downloads
+# stuck on metadata or stalled are removed, and Radarr/Sonarr blocklist them and search again. Seeding and failed downloads
 # are left to qBittorrent and Radarr/Sonarr (app_config_qbittorrent_preferences, arrs.yml).
 
 - name: Cleanuparr | Read the setup state
@@ -45,70 +44,40 @@
   check_mode: false
   no_log: true
 
-- name: Cleanuparr | Read the settings
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.cleanuparr }}/api/{{ item }}"
-    headers:
-      Authorization: "Bearer {{ _app_config_cleanuparr_login.json.tokens.accessToken }}"
-  loop:
-    - configuration/download_client
-    - configuration/radarr
-    - configuration/sonarr
-    - configuration/queue_cleaner
-  register: _app_config_cleanuparr_read
-  check_mode: false
-  no_log: true
-
-- name: Cleanuparr | Remember the settings
-  ansible.builtin.set_fact:
-    _app_config_cleanuparr: >-
-      {{ dict(_app_config_cleanuparr_read.results | map(attribute='item')
-              | zip(_app_config_cleanuparr_read.results | map(attribute='json'))) }}
-  no_log: true
-
-# qBittorrent runs in gluetun's network namespace, so it is reached as "gluetun".
+# Kept the way it is here: a changed address, API key or login is put back. qBittorrent runs in
+# gluetun's network namespace, so it is reached as "gluetun".
 - name: Cleanuparr | qBittorrent
-  ansible.builtin.uri:
+  api_resource:
     url: "{{ app_config_urls.cleanuparr }}/api/configuration/download_client"
-    method: POST
     headers:
       Authorization: "Bearer {{ _app_config_cleanuparr_login.json.tokens.accessToken }}"
-    body_format: json
-    body:
+    list_key: clients
+    wanted:
       enabled: true
       name: qBittorrent
       typeName: qBittorrent
       host: "http://gluetun:{{ homelab_ports.qbittorrent }}"
       username: "{{ homelab_username }}"
       password: "{{ homelab_password }}"
-    status_code:
-      - 200
-      - 201
-  when: _app_config_cleanuparr['configuration/download_client'].clients | length == 0
-  changed_when: true
   no_log: true
 
 - name: Cleanuparr | Radarr and Sonarr
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.cleanuparr }}/api/configuration/{{ item.name }}/instances"
-    method: POST
+  api_resource:
+    url: "{{ app_config_urls.cleanuparr }}/api/configuration/{{ item.name }}"
+    create_url: "{{ app_config_urls.cleanuparr }}/api/configuration/{{ item.name }}/instances"
+    item_url: "{url}/instances/{id}"
     headers:
       Authorization: "Bearer {{ _app_config_cleanuparr_login.json.tokens.accessToken }}"
-    body_format: json
-    body:
+    list_key: instances
+    wanted:
       enabled: true
       name: "{{ item.name | capitalize }}"
-      url: "http://{{ item.name }}:{{ item.port }}"
+      url: "http://{{ item.name }}:{{ item.port }}/"   # as Cleanuparr stores it
       apiKey: "{{ _app_config_api_keys[item.name] }}"
       version: "{{ item.major_version }}"
-    status_code:
-      - 200
-      - 201
   loop: "{{ app_config_arrs }}"
   loop_control:
     label: "{{ item.name }}"
-  when: _app_config_cleanuparr['configuration/' ~ item.name].instances | length == 0
-  changed_when: true
   no_log: true
 
 - name: Cleanuparr | Queue cleaner

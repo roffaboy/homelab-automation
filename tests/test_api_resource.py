@@ -73,6 +73,12 @@ class Helpers(unittest.TestCase):
         got = api_resource.differing({"url": "x", "apiKey": "********"}, {"url": "x", "apiKey": "real"})
         self.assertEqual(got, {})
 
+    def test_a_mask_of_stars_or_bullets_is_no_difference_but_other_text_is(self):
+        for mask in ("********", "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022", "****"):
+            self.assertEqual(api_resource.differing({"password": mask}, {"password": "real"}), {})
+        self.assertEqual(api_resource.differing({"password": "abc"}, {"password": "real"}), {"password": "real"})
+        self.assertEqual(api_resource.differing({"password": "***x"}, {"password": "real"}), {"password": "real"})
+
     def test_the_diff_hides_secrets_only(self):
         got = api_resource.build_diff({"url": "a", "apiKey": "old"}, {"url": "b", "apiKey": "new"})
         self.assertEqual(got["before"], {"url": "a", "apiKey": api_resource.HIDDEN})
@@ -116,6 +122,27 @@ class Module(unittest.TestCase):
         result = self.run_module(wanted={"name": "Sonarr", "url": "http://sonarr:8989"})
         self.assertTrue(result["changed"])
         self.assertEqual(App.writes, [("POST", "/items", {"name": "Sonarr", "url": "http://sonarr:8989"})])
+
+    def test_recursive_keeps_the_nested_keys_you_did_not_name(self):
+        App.items[0]["filters"] = {"a": 1, "b": 2}
+        result = self.run_module(wanted={"name": "Radarr", "filters": {"a": 9}}, recursive=True)
+        self.assertTrue(result["changed"])
+        self.assertEqual(App.writes[0][2]["filters"], {"a": 9, "b": 2})
+        App.writes.clear()
+        self.assertFalse(self.run_module(wanted={"name": "Radarr", "filters": {"a": 1}}, recursive=True)["changed"])
+
+    def test_without_recursive_a_nested_object_is_replaced(self):
+        App.items[0]["filters"] = {"a": 1, "b": 2}
+        self.run_module(wanted={"name": "Radarr", "filters": {"a": 9}})
+        self.assertEqual(App.writes[0][2]["filters"], {"a": 9})
+
+    def test_a_partial_update_sends_only_the_wanted_keys(self):
+        self.run_module(wanted={"name": "Radarr", "url": "x"}, partial_update=True)
+        self.assertEqual(App.writes[0][2], {"name": "Radarr", "url": "x"})
+
+    def test_a_new_item_can_be_posted_to_another_address(self):
+        self.run_module(wanted={"name": "Sonarr"}, create_url=self.base + "/items/new")
+        self.assertEqual(App.writes[0][:2], ("POST", "/items/new"))
 
     def test_a_different_value_is_saved_at_the_items_own_address(self):
         result = self.run_module(wanted={"name": "Radarr", "url": "http://radarr:9999"})
