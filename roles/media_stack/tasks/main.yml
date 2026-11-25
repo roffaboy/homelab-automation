@@ -3,8 +3,6 @@
   ansible.builtin.file:
     path: "{{ homelab_stack_dirs.media }}/{{ item }}"
     state: directory
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0755"
   loop:
     - ""
@@ -22,8 +20,6 @@
   ansible.builtin.template:
     src: jellyfin-theme.sh.j2
     dest: "{{ homelab_stack_dirs.media }}/jellyfin-theme.sh"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0755"
   when: homelab_jellyfin_theme | length > 0
 
@@ -31,8 +27,6 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ homelab_stack_dirs.media }}/docker-compose.yml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
 
 - name: Start the media stack

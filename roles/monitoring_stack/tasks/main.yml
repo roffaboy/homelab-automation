@@ -28,8 +28,6 @@
   ansible.builtin.copy:
     src: prometheus.yml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/prometheus/prometheus.yml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
   notify: Restart prometheus
   when: homelab_monitoring | bool
@@ -38,8 +36,6 @@
   ansible.builtin.copy:
     src: datasources.yml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/datasources/prometheus.yml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
   notify: Restart grafana
   when: homelab_monitoring | bool
@@ -48,8 +44,6 @@
   ansible.builtin.copy:
     src: dashboards.yml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/dashboards/dashboards.yml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
   notify: Restart grafana
   when: homelab_monitoring | bool
@@ -59,8 +53,6 @@
   ansible.builtin.copy:
     src: homelab-overview.json
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/dashboards/homelab-overview.json"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
   when: homelab_monitoring | bool
 
@@ -69,8 +61,6 @@
   ansible.builtin.copy:
     src: alerting.yml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/alerting/alerting.yml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
   when: homelab_monitoring | bool and homelab_telegram | bool
   notify: Restart grafana
@@ -85,6 +75,9 @@
       TELEGRAM_BOT_TOKEN={{ homelab_telegram_bot_token }}
       TELEGRAM_CHAT_ID={{ homelab_telegram_chat_id }}
     dest: "{{ homelab_stack_dirs.monitoring }}/grafana.env"
+    # The files of this role belong to the homelab user (provision.yml); this one stays root's.
+    owner: root
+    group: root
     mode: "0600"
   no_log: true
   when: homelab_monitoring | bool
@@ -95,8 +88,6 @@
   ansible.builtin.template:
     src: homepage-settings.yaml.j2
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/settings.yaml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
   when: homelab_homepage | bool
   notify: Restart homepage
@@ -106,8 +97,6 @@
   ansible.builtin.copy:
     src: homepage/widgets.yaml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/widgets.yaml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
   when: homelab_homepage | bool
   notify: Restart homepage
@@ -118,8 +107,6 @@
   ansible.builtin.template:
     src: homepage-custom.css.j2
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/custom.css"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
   when: homelab_homepage | bool
   notify: Restart homepage
@@ -129,8 +116,6 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ homelab_stack_dirs.monitoring }}/docker-compose.yml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
 
 - name: Start the monitoring stack

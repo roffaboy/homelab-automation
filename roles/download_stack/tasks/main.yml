@@ -3,8 +3,6 @@
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0755"
   loop:
     - "{{ homelab_stack_dirs.download }}"
@@ -19,8 +17,6 @@
   ansible.builtin.copy:
     src: "{{ homelab_config_dir }}/wg0.conf"
     dest: "{{ homelab_stack_dirs.download }}/wireguard/wg0.conf"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0600"
   no_log: true
   when: homelab_vpn | bool
@@ -37,8 +33,6 @@
   ansible.builtin.template:
     src: qBittorrent.conf.j2
     dest: "{{ homelab_stack_dirs.download }}/appdata/qbittorrent/qBittorrent/qBittorrent.conf"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
     force: false
   no_log: true
@@ -47,8 +41,6 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ homelab_stack_dirs.download }}/docker-compose.yml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
 
 - name: Start the download stack

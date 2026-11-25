@@ -3,8 +3,6 @@
   ansible.builtin.file:
     path: "{{ homelab_stack_dirs.books }}/{{ item }}"
     state: directory
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0755"
   loop:
     - ""
@@ -16,8 +14,6 @@
   ansible.builtin.file:
     path: "{{ homelab_data_dir }}/{{ item }}"
     state: directory
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0775"
   loop:
     - media/books
@@ -27,8 +23,6 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ homelab_stack_dirs.books }}/docker-compose.yml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
 
 - name: Start the books stack

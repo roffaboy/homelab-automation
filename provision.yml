@@ -119,18 +119,31 @@
       tags: docker
     - role: homelab_common
       tags: always
+    # The roles that write the apps' files: owner and group are the homelab user's (a task that needs
+    # another one says so itself; the mode stays in each task, as ansible-lint wants). The roles with
+    # root's files (docker, backup, autodeploy, tailscale, homelab_common) don't get this.
     - role: download_stack
       tags: download
+      module_defaults: &app_files
+        ansible.builtin.copy: &app_file
+          owner: "{{ homelab_uid }}"
+          group: "{{ homelab_gid }}"
+        ansible.builtin.template: *app_file
+        ansible.builtin.file: *app_file
     - role: media_stack
       tags: media
+      module_defaults: *app_files
     - role: books_stack
       tags: books
       when: homelab_books | bool
+      module_defaults: *app_files
     - role: monitoring_stack
       tags: monitoring
       when: homelab_monitoring | bool or homelab_homepage | bool
+      module_defaults: *app_files
     - role: app_config
       tags: apps
+      module_defaults: *app_files
     - role: backup
       tags: backup
       when: homelab_backup_remote | length > 0

@@ -5,8 +5,6 @@
   ansible.builtin.template:
     src: homepage-services.yaml.j2
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/services.yaml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0600"
   no_log: true
 
@@ -86,6 +84,4 @@
   ansible.builtin.template:
     src: homepage-bookmarks.yaml.j2
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/bookmarks.yaml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0644"
