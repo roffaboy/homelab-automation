@@ -3,40 +3,19 @@
 # (config/maintainerr.yml). Radarr and Sonarr are kept the way Ansible knows them; the rest is added
 # when missing and then left alone. Maintainerr has no login.
 
-- name: Maintainerr | Read the connections
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.maintainerr }}/api/settings/{{ item }}"
-  loop:
-    - jellyfin
-    - seerr
-  register: _app_config_maintainerr_read
-  check_mode: false
-  no_log: true
-
-- name: Maintainerr | Remember the connections
-  ansible.builtin.set_fact:
-    _app_config_maintainerr: >-
-      {{ dict(_app_config_maintainerr_read.results | map(attribute='item')
-              | zip(_app_config_maintainerr_read.results | map(attribute='json'))) }}
-  no_log: true
-
-# Also makes Jellyfin its media server; the API key is the one Radarr and Sonarr use.
+# Brought in line on every run: a changed address, API key or token is put back. Jellyfin also
+# becomes its media server; the API key is the one Radarr and Sonarr use. Maintainerr answers a
+# refusal with status NOK, also when the HTTP status is 201.
 - name: Maintainerr | Jellyfin
-  ansible.builtin.uri:
+  rest_settings:
     url: "{{ app_config_urls.maintainerr }}/api/settings/jellyfin"
-    method: POST
-    body_format: json
-    body:
+    read_only: [jellyfin_user_id]   # Maintainerr fills this in itself; a first save with it (null) is refused
+    wanted:
       jellyfin_url: http://jellyfin:8096
       jellyfin_api_key: "{{ _app_config_jellyfin_api_key }}"
-    status_code: 201
-  register: _app_config_maintainerr_jellyfin
-  when: not _app_config_maintainerr.jellyfin.jellyfin_url
-  changed_when: true
-  failed_when: _app_config_maintainerr_jellyfin.json.status | default('NOK') != 'OK'
+    response_check: {status: OK}
   no_log: true
 
-# Brought in line on every run: a changed address or API key is put back to what Ansible knows.
 - name: Maintainerr | Radarr and Sonarr
   api_resource:
     url: "{{ app_config_urls.maintainerr }}/api/settings/{{ item.name }}"
@@ -52,34 +31,23 @@
   no_log: true
 
 - name: Maintainerr | Seerr
-  ansible.builtin.uri:
+  rest_settings:
     url: "{{ app_config_urls.maintainerr }}/api/settings/seerr"
-    method: POST
-    body_format: json
-    body:
+    wanted:
       url: http://seerr:5055
       api_key: "{{ _app_config_seerr_key }}"
-    status_code: 201
-  register: _app_config_maintainerr_seerr
-  when: not _app_config_maintainerr.seerr.url
-  changed_when: true
-  failed_when: _app_config_maintainerr_seerr.json.status | default('NOK') != 'OK'
+    response_check: {status: OK}
   no_log: true
 
-- name: Maintainerr | Read the Telegram notifications
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.maintainerr }}/api/notifications/configurations"
-  register: _app_config_maintainerr_notifications
-  check_mode: false
-  no_log: true
-  when: homelab_telegram | bool
-
+# Saving an entry with its id (POST .../add) changes that entry instead of adding one.
 - name: Maintainerr | Telegram notifications
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.maintainerr }}/api/notifications/configuration/add"
-    method: POST
-    body_format: json
-    body:
+  api_resource:
+    url: "{{ app_config_urls.maintainerr }}/api/notifications/configurations"
+    create_url: "{{ app_config_urls.maintainerr }}/api/notifications/configuration/add"
+    item_url: "{{ app_config_urls.maintainerr }}/api/notifications/configuration/add"
+    update_method: POST
+    match_key: agent
+    wanted:
       agent: telegram
       name: Telegram
       enabled: true
@@ -88,13 +56,8 @@
       options:
         botAuthToken: "{{ homelab_telegram_bot_token }}"
         chatId: "{{ homelab_telegram_chat_id }}"
-    status_code: 201
-  register: _app_config_maintainerr_telegram
-  when:
-    - homelab_telegram | bool
-    - "'telegram' not in _app_config_maintainerr_notifications.json | map(attribute='agent')"
-  changed_when: true
-  failed_when: _app_config_maintainerr_telegram.json.code | default(0) != 1
+    response_check: {code: 1}
+  when: homelab_telegram | bool
   no_log: true
 
 # Read again: the steps above may just have added the servers and the notification.
