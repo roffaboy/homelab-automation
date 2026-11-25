@@ -1,1 +1,4 @@
-ansible-core==2.21.6
+# Which ansible-core pip picks depends on the Python of the machine: 2.22 needs Python 3.13
+# (Ubuntu 26.04), Ubuntu 24.04 has 3.12 and stays on the 2.21 series. Renovate moves the pinned line.
+ansible-core==2.22.0; python_version >= "3.13"
+ansible-core>=2.21,<2.22; python_version < "3.13"
