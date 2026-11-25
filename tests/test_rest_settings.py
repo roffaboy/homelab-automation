@@ -22,6 +22,7 @@ class App(BaseHTTPRequestHandler):
     writes = []
     fail = False
     plain_reply = False
+    refuse = False
 
     def log_message(self, *args):
         pass
@@ -41,7 +42,9 @@ class App(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         App.writes.append((self.command, self.headers.get("X-Api-Key"), body))
         App.state = body
-        if App.plain_reply:   # some apps answer a save with plain text, or nothing
+        if App.refuse:
+            self.reply(201, {"status": "NOK"})
+        elif App.plain_reply:   # some apps answer a save with plain text, or nothing
             self.send_response(200)
             self.send_header("Content-Length", "2")
             self.end_headers()
@@ -97,6 +100,7 @@ class Module(unittest.TestCase):
         App.writes = []
         App.fail = False
         App.plain_reply = False
+        App.refuse = False
 
     def run_module(self, **args):
         args.setdefault("url", self.url)
@@ -137,6 +141,12 @@ class Module(unittest.TestCase):
     def test_the_object_can_be_saved_at_another_address(self):
         self.run_module(wanted={"enabled": True}, write_url=self.url + "/save")
         self.assertEqual(App.writes[0][0], "POST")
+
+    def test_an_answer_that_refuses_fails_the_module(self):
+        App.refuse = True
+        result = self.run_module(wanted={"enabled": True}, response_check={"status": "OK"})
+        self.assertTrue(result["failed"])
+        self.assertIn("NOK", result["msg"])
 
     def test_the_write_method_can_be_chosen(self):
         self.run_module(wanted={"enabled": True}, write_method="PUT")

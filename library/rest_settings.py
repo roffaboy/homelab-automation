@@ -47,6 +47,12 @@ options:
     type: str
     choices: [POST, PUT, PATCH]
     default: POST
+  response_check:
+    description:
+      - Keys and values that the answer to the save must contain, for apps that answer C(201) with
+        C({status: NOK}) when they refuse. Anything else fails the module.
+    type: dict
+    default: {}
   read_only:
     description: Keys that are not sent back, because the app refuses them (for example an API key it only shows).
     type: list
@@ -124,6 +130,18 @@ def changes(before, after, path=""):
     return out
 
 
+def response_problem(answer, check):
+    """Why the answer does not hold what response_check asks, or None."""
+    if not check:
+        return None
+    if not isinstance(answer, dict):
+        return "the answer is not an object: %r" % (answer,)
+    for key, value in check.items():
+        if answer.get(key) != value:
+            return "the answer has %s=%r, not %r" % (key, answer.get(key), value)
+    return None
+
+
 def without(settings, read_only):
     """Copy of the settings without the read-only keys."""
     return {k: v for k, v in settings.items() if k not in read_only}
@@ -137,9 +155,12 @@ def request(module, method, url, headers, data=None):
         response = open_url(url, method=method, headers=dict(headers, **{"Content-Type": "application/json"}),
                             timeout=60, data=None if data is None else json.dumps(data))
         raw = response.read()
-        if method != "GET":
-            return None   # what the app answers to a save is not needed, and need not be JSON
-        return json.loads(raw) if raw else None
+        try:
+            return json.loads(raw) if raw else None
+        except ValueError:
+            if method == "GET":
+                raise
+            return None   # the answer to a save need not be JSON
     except HTTPError as e:
         module.fail_json(msg="%s %s failed: HTTP %s" % (method, url, e.code), response=e.read().decode(errors="replace"))
     except Exception as e:  # connection refused, timeout, a body that is no JSON, ...
@@ -157,6 +178,7 @@ def main():
             wanted=dict(type="dict", required=True),
             recursive=dict(type="bool", default=False),
             write_method=dict(type="str", default="POST", choices=["POST", "PUT", "PATCH"]),
+            response_check=dict(type="dict", default={}),
             read_only=dict(type="list", elements="str", default=[]),
         ),
         supports_check_mode=True,
@@ -170,7 +192,11 @@ def main():
         module.exit_json(changed=False)
     diff = changes(current, wanted)
     if not module.check_mode:
-        request(module, p["write_method"], p["write_url"] or p["url"], p["headers"], without(wanted, p["read_only"]))
+        address = p["write_url"] or p["url"]
+        answer = request(module, p["write_method"], address, p["headers"], without(wanted, p["read_only"]))
+        problem = response_problem(answer, p["response_check"])
+        if problem:
+            module.fail_json(msg="%s %s: %s" % (p["write_method"], address, problem))
     module.exit_json(changed=True,
                      diff=dict(before={k: v[0] for k, v in diff.items()}, after={k: v[1] for k, v in diff.items()}))
 
