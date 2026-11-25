@@ -17,7 +17,37 @@
           preferred: {{ app_config_recyclarr_sizes[kind].preferred[res] }}
           max: {{ app_config_recyclarr_sizes[kind].max[res] }}
 {% endfor %}
-{% endmacro %}
+{% endmacro -%}
+
+{# The custom format groups of an app: the group of TRaSH's guide, without the formats it leaves out while x265 is allowed. #}
+{% macro groups(app) %}
+    custom_format_groups:
+      add:
+{% for g in app_config_recyclarr_groups[app] %}
+        - trash_id: {{ g.trash_id }}
+{% if g.exclude_when_x265_allowed is defined and not app_config_recyclarr_block_x265_hd | bool %}
+          exclude:
+{% for id in g.exclude_when_x265_allowed %}
+            - {{ id }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endmacro -%}
+{# The scores of an app's profile: the defaults, then your own. #}
+{% macro scores(app) %}
+{% set all = app_config_recyclarr_scores[app] | combine(app_config_recyclarr_extra_scores[app]) %}
+{% if all | length > 0 %}
+    custom_formats:
+{% for id, score in all.items() %}
+      - trash_ids:
+          - {{ id }}
+        assign_scores_to:
+          - name: {{ app_config_quality_profiles[app] }}
+            score: {{ score }}
+{% endfor %}
+
+{% endif %}
+{% endmacro -%}
 
 radarr:
   radarr:
@@ -33,50 +63,28 @@ radarr:
         name: {{ app_config_quality_profiles.radarr }}
         # Best first: a release of a lower quality is taken when there is none of a higher one.
         qualities:
-          - name: Bluray-2160p
-          - name: WEB 2160p
+{% for q in app_config_profile_qualities.movie %}
+{# WEBDL and WEBRip of a resolution form one "WEB <resolution>" group, at the place of the first #}
+{% set res = q.split('-')[1] %}
+{% if q.startswith('WEBDL-') %}
+          - name: WEB {{ res }}
             qualities:
-              - WEBDL-2160p
-              - WEBRip-2160p
-          - name: Bluray-1080p
-          - name: WEB 1080p
-            qualities:
-              - WEBDL-1080p
-              - WEBRip-1080p
-          - name: Bluray-720p
-          - name: WEB 720p
-            qualities:
-              - WEBDL-720p
-              - WEBRip-720p
+              - {{ q }}
+{% if 'WEBRip-' ~ res in app_config_profile_qualities.movie %}
+              - WEBRip-{{ res }}
+{% endif %}
+{% elif not q.startswith('WEBRip-') or 'WEBDL-' ~ res not in app_config_profile_qualities.movie %}
+          - name: {{ q }}
+{% endif %}
+{% endfor %}
         reset_unmatched_scores:
           enabled: true
         upgrade:
           allowed: {{ app_config_recyclarr_upgrades | bool | lower }}
           until_quality: Bluray-2160p
 
-    custom_format_groups:
-      add:
-        # The TRaSH profile pulls this group in implicitly; it is listed so x265 (HD) can be excluded.
-        - trash_id: f8bf8eab4617f12dfdbd16303d8da245  # [Optional] Golden Rule HD
-{% if not app_config_recyclarr_block_x265_hd | bool %}
-          exclude:
-            - dc98083864ea246d05a42df0d05f81cc  # x265 (HD)
-{% endif %}
-        - trash_id: a3ac6af01d78e4f21fcb75f601ac96df  # [Unwanted] Unwanted Formats (BR-DISK, LQ, 3D, Extras, Upscaled, ...)
-
-{% if not app_config_recyclarr_block_x265_hd | bool %}
-    # "x265 (no HDR/DV)" (-10000 in TRaSH's profile) would also hit every 1080p x265 file that is
-    # allowed above: such a file scores below the minimum, so Radarr keeps searching "upgrades" and
-    # grabs release after release that it then refuses to import (see app_config_recyclarr_block_x265_hd).
-    custom_formats:
-      - trash_ids:
-          - 839bea857ed2c0a8e084f3cbdbd65ecb  # x265 (no HDR/DV)
-        assign_scores_to:
-          - name: {{ app_config_quality_profiles.radarr }}
-            score: 0
-
-{% endif %}
-    media_naming:
+{{ groups('radarr') }}
+{{ scores('radarr') }}    media_naming:
       folder: jellyfin-imdb
       movie:
         rename: true
@@ -99,19 +107,8 @@ sonarr:
         upgrade:
           allowed: {{ app_config_recyclarr_upgrades | bool | lower }}
 
-    custom_format_groups:
-      add:
-        # The TRaSH profile pulls this group in implicitly; it is listed so x265 (HD) can be excluded.
-        - trash_id: 158188097a58d7687dee647e04af0da3  # [Optional] Golden Rule HD
-{% if not app_config_recyclarr_block_x265_hd | bool %}
-          exclude:
-            - 47435ece6b99a0b477caf360e79ba0bb  # x265 (HD)
-{% endif %}
-        - trash_id: 74aff4168620ed49dcc67e92b2c2a5b4  # [Optional] Language Profiles
-        - trash_id: 85fae4a2294965b75710ef2989c850eb  # [Streaming Services] HD/UHD boost
-        - trash_id: 59c3af66780d08332fdc64e68297098f  # [Unwanted] Unwanted Formats (BR-DISK, LQ, Extras, Upscaled, ...)
-
-    media_naming:
+{{ groups('sonarr') }}
+{{ scores('sonarr') }}    media_naming:
       series: jellyfin-tvdb
       season: default
       episodes:
