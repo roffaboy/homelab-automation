@@ -1,4 +1,5 @@
-# Checks every PR before it gets merged: first ansible-lint, then (only when lint passes, and
+# Checks every PR before it gets merged: first ansible-lint and the unit tests of the modules (on both
+# Ubuntu versions), then (only when both pass, and
 # not for a PR that only changes Markdown) setup.sh and the playbook on a fresh Ubuntu VM, on 24.04 and 26.04. The
 # playbook runs twice: the first run is a fresh install with every app wired up; the second
 # must change nothing. Renovate's image updates are tested this way too.
@@ -41,19 +42,37 @@ jobs:
         run: |
           cp -r config.example config
           echo ci >.vault_pass
-      - name: Unit tests of the modules
+      - uses: ansible/ansible-lint@v26.11.0
+
+  # The unit tests of the modules, on both Ubuntu versions, next to the lint: the two have another
+  # Python and so another ansible-core (requirements.txt), and the modules run inside it. They have
+  # to pass before an install is tried: a module that fails here would fail the playbook there.
+  unit:
+    name: unit tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - ubuntu-26.04
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install ansible-core the way setup.sh does
         run: |
           python3 -m venv /tmp/tests-venv
           /tmp/tests-venv/bin/pip install -q -r requirements.txt
-          /tmp/tests-venv/bin/python -m unittest discover -s tests
-      - uses: ansible/ansible-lint@v26.11.0
+          /tmp/tests-venv/bin/ansible --version | head -1
+      - name: Unit tests
+        run: /tmp/tests-venv/bin/python -m unittest discover -s tests -v
 
   # The install runs on both Ubuntu LTS versions the playbook supports, next to each other. The
   # Docker install is the same as on a server; the VM has no VPN (no wg0.conf), GPU
   # (homelab_ci) or Tailscale. Not again after the merge: the PR already ran it.
   install:
     name: install (${{ matrix.os }})
-    needs: lint
+    needs: [lint, unit]
     if: github.event_name == 'pull_request' && needs.lint.outputs.code == 'true'
     strategy:
       fail-fast: false
@@ -110,12 +129,12 @@ jobs:
   # One check for the branch protection to require, whatever the matrix looks like: it passes when
   # the installs passed or were skipped (a PR that only changes Markdown).
   test:
-    needs: [lint, install]
+    needs: [lint, unit, install]
     if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Installs on every supported Ubuntu
+      - name: Lint and unit tests passed, installs passed or were skipped
         run: |
-          echo "lint: ${{ needs.lint.result }}, install: ${{ needs.install.result }}"
-          [ "${{ needs.lint.result }}" = success ] &&
+          echo "lint: ${{ needs.lint.result }}, unit: ${{ needs.unit.result }}, install: ${{ needs.install.result }}"
+          [ "${{ needs.lint.result }}" = success ] && [ "${{ needs.unit.result }}" = success ] &&
             { [ "${{ needs.install.result }}" = success ] || [ "${{ needs.install.result }}" = skipped ]; }
