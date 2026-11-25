@@ -33,6 +33,7 @@
   ansible.builtin.template:
     src: qBittorrent.conf.j2
     dest: "{{ homelab_stack_dirs.download }}/appdata/qbittorrent/qBittorrent/qBittorrent.conf"
+    mode: "0644"
     force: false
   no_log: true
 
@@ -40,6 +41,7 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ homelab_stack_dirs.download }}/docker-compose.yml"
+    mode: "0644"
 
 - name: Start the download stack
   community.docker.docker_compose_v2:

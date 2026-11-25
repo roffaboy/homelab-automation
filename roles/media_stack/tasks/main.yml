@@ -27,6 +27,7 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ homelab_stack_dirs.media }}/docker-compose.yml"
+    mode: "0644"
 
 - name: Start the media stack
   community.docker.docker_compose_v2:

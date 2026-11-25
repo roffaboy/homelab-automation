@@ -28,6 +28,7 @@
   ansible.builtin.copy:
     src: prometheus.yml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/prometheus/prometheus.yml"
+    mode: "0644"
   notify: Restart prometheus
   when: homelab_monitoring | bool
 
@@ -35,6 +36,7 @@
   ansible.builtin.copy:
     src: datasources.yml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/datasources/prometheus.yml"
+    mode: "0644"
   notify: Restart grafana
   when: homelab_monitoring | bool
 
@@ -42,6 +44,7 @@
   ansible.builtin.copy:
     src: dashboards.yml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
   notify: Restart grafana
   when: homelab_monitoring | bool
 
@@ -50,6 +53,7 @@
   ansible.builtin.copy:
     src: homelab-overview.json
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/dashboards/homelab-overview.json"
+    mode: "0644"
   when: homelab_monitoring | bool
 
 # Alerts go to Telegram; without a bot in the vault there are none.
@@ -57,6 +61,7 @@
   ansible.builtin.copy:
     src: alerting.yml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/alerting/alerting.yml"
+    mode: "0644"
   when: homelab_monitoring | bool and homelab_telegram | bool
   notify: Restart grafana
 
@@ -83,6 +88,7 @@
   ansible.builtin.template:
     src: homepage-settings.yaml.j2
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/settings.yaml"
+    mode: "0644"
   when: homelab_homepage | bool
   notify: Restart homepage
   tags: homepage  # also with --tags homepage, like the tiles (app_config)
@@ -91,6 +97,7 @@
   ansible.builtin.copy:
     src: homepage/widgets.yaml
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/widgets.yaml"
+    mode: "0644"
   when: homelab_homepage | bool
   notify: Restart homepage
   tags: homepage
@@ -100,6 +107,7 @@
   ansible.builtin.template:
     src: homepage-custom.css.j2
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/custom.css"
+    mode: "0644"
   when: homelab_homepage | bool
   notify: Restart homepage
   tags: homepage
@@ -108,6 +116,7 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ homelab_stack_dirs.monitoring }}/docker-compose.yml"
+    mode: "0644"
 
 - name: Start the monitoring stack
   community.docker.docker_compose_v2:

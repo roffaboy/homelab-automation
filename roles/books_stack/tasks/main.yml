@@ -23,6 +23,7 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ homelab_stack_dirs.books }}/docker-compose.yml"
+    mode: "0644"
 
 - name: Start the books stack
   community.docker.docker_compose_v2:

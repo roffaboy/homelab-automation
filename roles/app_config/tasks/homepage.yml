@@ -84,3 +84,4 @@
   ansible.builtin.template:
     src: homepage-bookmarks.yaml.j2
     dest: "{{ homelab_stack_dirs.monitoring }}/appdata/homepage/bookmarks.yaml"
+    mode: "0644"
