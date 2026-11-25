@@ -78,11 +78,29 @@
     mode: "0600"
   no_log: true
 
-- name: Install the deploy script
-  ansible.builtin.template:
-    src: homelab-autodeploy.sh.j2
-    dest: /usr/local/bin/homelab-autodeploy
+- name: Create the folder for the notes the deploys and the bot leave each other
+  ansible.builtin.file:
+    path: "{{ homelab_state_dir }}"
+    state: directory
+    owner: "{{ homelab_uid }}"
+    group: "{{ homelab_gid }}"
     mode: "0755"
+
+- name: Install the deploy and what it shares with the bot
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/usr/local/lib/homelab/{{ item }}"
+    mode: "0644"
+  loop:
+    - homelab_common.py
+    - homelab_deploy.py
+  register: _autodeploy_modules
+
+# The deploy was a shell script here once.
+- name: Remove the old deploy script
+  ansible.builtin.file:
+    path: /usr/local/bin/homelab-autodeploy
+    state: absent
 
 - name: Install the systemd units
   ansible.builtin.template:
@@ -105,14 +123,6 @@
 - name: Telegram bot
   when: homelab_telegram | bool
   block:
-    - name: Create the folder for the hold on automatic deploys
-      ansible.builtin.file:
-        path: "{{ homelab_state_dir }}"
-        state: directory
-        owner: "{{ homelab_uid }}"
-        group: "{{ homelab_gid }}"
-        mode: "0755"
-
     - name: Write the bot's Telegram settings
       ansible.builtin.copy:
         content: |
@@ -148,6 +158,6 @@
         name: homelab-bot
         enabled: true
         state: >-
-          {{ 'restarted' if (_autodeploy_bot_env, _autodeploy_bot_script, _autodeploy_bot_unit)
+          {{ 'restarted' if (_autodeploy_bot_env, _autodeploy_bot_script, _autodeploy_bot_unit, _autodeploy_modules)
              | selectattr('changed') | list else 'started' }}
         daemon_reload: true
