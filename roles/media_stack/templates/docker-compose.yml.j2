@@ -17,7 +17,7 @@ services:
   jellyfin:
     image: {{ media_stack_images.jellyfin }}
     environment: *linuxserver-env
-{% if not homelab_ci | bool %}
+{% if homelab_gpu | bool %}
     # Intel iGPU for hardware transcoding; the image adds itself to the device's group.
     devices:
       - /dev/dri:/dev/dri

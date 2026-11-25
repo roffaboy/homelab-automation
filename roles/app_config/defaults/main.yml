@@ -195,11 +195,11 @@ app_config_jellyfin_repositories:
 # missing, not admins, with every library and their own watch history. Users you add in
 # Jellyfin itself are left alone.
 app_config_jellyfin_users: "{{ vault_jellyfin_users | default([]) }}"
-# VA-API on the Intel iGPU. HardwareAccelerationType: none = software transcoding.
+# VA-API on the Intel iGPU when there is one (homelab_gpu); none = software transcoding.
 app_config_jellyfin_encoding:
-  HardwareAccelerationType: vaapi
+  HardwareAccelerationType: "{{ 'vaapi' if homelab_gpu | bool else 'none' }}"
   VaapiDevice: /dev/dri/renderD128
-  EnableHardwareEncoding: true
+  EnableHardwareEncoding: "{{ homelab_gpu | bool }}"
   HardwareDecodingCodecs:
     - h264
     - hevc
