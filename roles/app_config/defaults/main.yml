@@ -139,9 +139,10 @@ app_config_prowlarr_minimum_seeders: 3
 # Prowlarr itself are kept. Example: config.example/indexers.yml
 app_config_prowlarr_indexers: []
 
-# Calibre-Web users besides the shared login, from the vault (config.example/vault.yml).
-# Created when missing; users you add in Calibre-Web itself are left alone.
-app_config_calibre_users: "{{ vault_calibre_users | default([]) }}"
+# Calibre-Web users besides the shared login: homelab_calibre_users in config/settings.yml
+# (vault_calibre_users in the vault still works). Created when missing; users you add in
+# Calibre-Web itself are left alone.
+app_config_calibre_users: "{{ homelab_calibre_users | default(vault_calibre_users | default([])) }}"
 
 app_config_jellyfin_server_name: Homelab
 app_config_jellyfin_language: en

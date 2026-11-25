@@ -164,7 +164,7 @@ ansible-playbook provision.yml
   For a Kobo: open Calibre-Web at `http://<server-ip>:8083`, Profile, Kobo Sync Token, and copy
   the `api_endpoint` line into `.kobo/Kobo/Kobo eReader.conf` on the Kobo (USB), under
   `[OneStoreServices]`. The Kobo syncs on your home wifi. Each reader can get their own user
-  with their own token: `vault_calibre_users` in the vault, or Admin, Add new user.
+  with their own token: `homelab_calibre_users` in `settings.yml` (see the example there), or Admin, Add new user.
 
 ## Extras
 
