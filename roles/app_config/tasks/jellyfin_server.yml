@@ -28,25 +28,13 @@
   when: item.name not in _app_config_jf_libraries.json | map(attribute='Name')
   changed_when: true
 
-- name: Jellyfin | Read the server settings
-  ansible.builtin.uri:
+# Kept the way they are set here (app_config_jellyfin_settings).
+- name: Jellyfin | Server name and hardware transcoding
+  rest_settings:
     url: "{{ app_config_urls.jellyfin }}/System/Configuration{{ item.path }}"
+    headers:
+      Authorization: "{{ _auth }}"
+    wanted: "{{ item.settings }}"
   loop: "{{ app_config_jellyfin_settings }}"
   loop_control:
     label: "{{ item.settings | list | join(', ') }}"
-  register: _app_config_jf_current
-  check_mode: false
-
-- name: Jellyfin | Server name and hardware transcoding
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.jellyfin }}/System/Configuration{{ item.item.path }}"
-    method: POST
-    body: "{{ item.json | combine(item.item.settings) }}"
-    status_code:
-      - 200
-      - 204
-  loop: "{{ _app_config_jf_current.results }}"
-  loop_control:
-    label: "{{ item.item.settings | list | join(', ') }}"
-  when: item.json | combine(item.item.settings) != item.json
-  changed_when: true
