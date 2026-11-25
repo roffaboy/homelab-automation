@@ -147,11 +147,12 @@ def is_secret(key):
 def differences(current, body, fields):
     """Compare the wanted keys with the current item. Returns (before, after) dicts.
 
-    Field values the API hides can't be compared, so they are skipped.
+    Field values the API hides can't be compared, so they are skipped; so are secret keys of the item
+    itself (the login's password comes back as a hash, and its confirmation empty).
     """
     before, after = {}, {}
     for key, wanted in body.items():
-        if current.get(key) != wanted:
+        if not is_secret(key) and current.get(key) != wanted:
             before[key], after[key] = current.get(key), wanted
     current_fields = get_fields(current)
     for name, wanted in fields.items():
