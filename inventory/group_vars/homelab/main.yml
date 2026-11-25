@@ -1,7 +1,7 @@
 ---
 # Settings shared by several roles. Role-specific settings live in roles/*/defaults.
 
-homelab_user: "{{ vault_homelab_user }}"   # the server's login user
+homelab_user: "{{ vault_homelab_user | default('') }}"   # the server's login user (settings.yml; the vault key is the old place)
 # Your own configuration: config/, a link to your private repo (README).
 homelab_config_dir: "{{ playbook_dir }}/config"
 homelab_uid: 1000
@@ -21,7 +21,7 @@ homelab_docker_network: homelab_network
 # One login for every service, also used by the services to talk to each other.
 homelab_username: "{{ homelab_user }}"
 homelab_password: "{{ vault_homelab_password }}"
-homelab_admin_email: "{{ vault_admin_email }}"
+homelab_admin_email: "{{ vault_admin_email | default('') }}"   # settings.yml; the vault key is the old place
 
 # Telegram bot for notifications. Optional: without both in the vault, nothing is sent.
 homelab_telegram_bot_token: "{{ vault_telegram_bot_token | default('') }}"

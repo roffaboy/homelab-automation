@@ -1,6 +1,10 @@
 ---
 # Your own choices, overriding inventory/group_vars/homelab/main.yml and roles/*/defaults.
 # Copy this to config/settings.yml. Not encrypted: there is nothing secret in it.
+# Required. Plain settings and not secrets; kept out of the vault, because Ansible hides everything
+# from the vault as $REDACTED$ in its output, a user name included.
+homelab_user: ""          # the server's login user (owns the app folders)
+homelab_admin_email: ""   # Seerr's admin email
 homelab_bazarr: true
 homelab_monitoring: true
 homelab_homepage: true
