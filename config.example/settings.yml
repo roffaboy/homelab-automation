@@ -47,3 +47,16 @@ homelab_tailscale: true
 # Jellyfin users who may do everything in Seerr (Admin), e.g. the login you use every day:
 # app_config_seerr_admin_users:
 #   - viewer
+# More Calibre-Web users (one for each Kobo), created when missing. Names and emails are plain here;
+# encrypt only the secrets, one by one, so Ansible does not hide a name as $REDACTED$ in its output
+# (it hides everything from a vault file). The kobo_token (optional, 32 characters, from Profile >
+# Kobo Sync Token) keeps a Kobo syncing after a reinstall; for the shared login give only its name
+# and kobo_token. Encrypt a token with:
+#   ansible-vault encrypt_string --stdin-name kobo_token   (paste it, then Ctrl+D)
+# homelab_calibre_users:
+#   - name: reader
+#     email: reader@example.com
+#     password: "{{ vault_homelab_password }}"   # or another vaulted value
+#     kobo_token: !vault |
+#       $ANSIBLE_VAULT;1.1;AES256
+#       ...
