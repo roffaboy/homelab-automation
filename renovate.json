@@ -15,19 +15,6 @@
         "\\s[a-z_]+: (?<depName>[a-z0-9.-]+(?:/[a-z0-9._-]+)+):(?<currentValue>[\\w.-]+)"
       ],
       "datasourceTemplate": "docker"
-    },
-    {
-      "description": "The Holyfin version named in the example config and in Homepage's fonts",
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^config\\.example/jellyfin\\.yml$/",
-        "/^roles/monitoring_stack/templates/homepage-theme\\.css$/"
-      ],
-      "matchStrings": [
-        "roffaboy/holyfin@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
-      ],
-      "depNameTemplate": "roffaboy/holyfin",
-      "datasourceTemplate": "github-tags"
     }
   ],
   "packageRules": [

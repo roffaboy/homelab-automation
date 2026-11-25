@@ -40,9 +40,6 @@ homelab_ci: false
 homelab_bazarr: true       # subtitles
 homelab_monitoring: true   # Grafana and Prometheus
 homelab_homepage: true     # a start page with every app
-# Optional: Homepage in the style of Holyfin (flat, square, Geist, one red accent), with the tiles
-# laid out two by two. false (default): Homepage's own look, no custom CSS at all.
-homelab_homepage_custom_theme: false
 # Homepage's theme: "dark" or "light".
 homelab_homepage_theme: dark
 homelab_books: true        # ebooks, synced to a Kobo
