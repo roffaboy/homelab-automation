@@ -82,9 +82,13 @@ This repo is the same for everyone. Everything that is yours lives in `config/`,
 so split it up as you like. Leave a file out and that part isn't configured.
 
 - **`vault.yml`** (encrypted): passwords and API keys, and the extra users of Jellyfin and
-  Calibre-Web. Required: `vault_homelab_user` (your Ubuntu user), `vault_homelab_password` (the
-  login for every app), `vault_admin_email`, `vault_backup_password`.
-- **`settings.yml`**: your choices: which optional apps, time zone, subtitle languages (see Options).
+  Calibre-Web. Required: `vault_homelab_password` (the login for every app) and
+  `vault_backup_password`.
+- **`settings.yml`**: your choices. Required: `homelab_user` (your Ubuntu user) and
+  `homelab_admin_email` (Seerr's admin). Also which optional apps, time zone, subtitle languages
+  (see Options). The user and the email are here and not in the vault on purpose: Ansible hides
+  everything from the vault as `$REDACTED$` in its output, a user name included. A configuration
+  with `vault_homelab_user` and `vault_admin_email` in the vault still works.
 - **`indexers.yml`**: the sites Prowlarr searches. Per site a `name` and its `definition`, the
   file name (without `.yml`) in [Prowlarr's indexer list](https://github.com/Prowlarr/Indexers/tree/master/definitions):
   `- { name: My indexer, definition: <id> }`. Indexers added in Prowlarr itself are kept.

@@ -75,9 +75,7 @@ lines = [
     "---",
     "# Written by init-config.sh. ./setup.sh encrypts it; change it later with:",
     "#   ansible-vault edit config/vault.yml",
-    f"vault_homelab_user: {json.dumps(os.environ['CONFIG_USER'])}",
     f"vault_homelab_password: {json.dumps(os.environ['CONFIG_PASSWORD'])}",
-    f"vault_admin_email: {json.dumps(os.environ['CONFIG_EMAIL'])}",
     f"vault_backup_password: {json.dumps(os.environ['CONFIG_BACKUP'])}",
     "# More options (Telegram, subtitle accounts, automatic deploys): config.example/vault.yml",
 ]
@@ -87,11 +85,18 @@ lines.append("")
 open(sys.argv[1], "w").write("\n".join(lines))
 PY
 umask 022
+# The user name and the email are plain settings, not vault secrets: Ansible hides everything
+# from the vault as $REDACTED$ in its output. JSON strings are valid YAML.
+json_string() { VALUE="$1" python3 -c 'import json,os;print(json.dumps(os.environ["VALUE"]))'; }
+user_yaml="$(json_string "$user")"
+email_yaml="$(json_string "$email")"
 if [ ! -f "$config_dir/settings.yml" ]; then
   cat >"$config_dir/settings.yml" <<SETTINGS
 ---
 # Your own choices, overriding inventory/group_vars/homelab/main.yml and roles/*/defaults.
 # More options: config.example/settings.yml
+homelab_user: $user_yaml
+homelab_admin_email: $email_yaml
 homelab_bazarr: $bazarr
 homelab_monitoring: $monitoring
 homelab_homepage: $homepage
