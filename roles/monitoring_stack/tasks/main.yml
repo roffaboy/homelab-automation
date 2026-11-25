@@ -57,25 +57,6 @@
     mode: "0644"
   when: homelab_monitoring | bool and (homelab_config_dir ~ '/grafana-dashboards') is directory
 
-# Only those: an earlier version of this playbook shipped its own, and Grafana would keep loading it.
-- name: Find the dashboards Grafana loads
-  ansible.builtin.find:
-    paths: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/dashboards"
-    patterns: "*.json"
-  register: _monitoring_stack_dashboards
-  when: homelab_monitoring | bool
-
-- name: Remove the dashboards that are not in config/grafana-dashboards/
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    state: absent
-  loop: "{{ _monitoring_stack_dashboards.files | default([]) }}"
-  loop_control:
-    label: "{{ item.path | basename }}"
-  when:
-    - homelab_monitoring | bool
-    - item.path | basename not in query('ansible.builtin.fileglob', homelab_config_dir ~ '/grafana-dashboards/*.json') | map('basename') | list
-
 # Alerts go to Telegram; without a bot in the vault there are none.
 - name: Provision the alerts in Grafana
   ansible.builtin.copy:

@@ -17,14 +17,23 @@
                     | map('regex_search', '<ApiKey>(\w+)</ApiKey>', '\1') | map('first'))) }}
   no_log: true
 
-# Kept the way it is here on every run (not only on a fresh install): the login method, the user,
-# and no trusted network. The password can't be read back, so it is sent along when something else
-# changes, and a changed password in the vault reaches the apps through the next such change.
-- name: Set the shared login
+- name: Read the login settings
+  ansible.builtin.uri:
+    url: "{{ app_config_urls[item.key] }}/api/{{ item.value.api }}/config/host"
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys[item.key] }}"
+  loop: "{{ app_config_servarr | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: _app_config_hosts
+  check_mode: false
+
+# A fresh install has no login yet; an existing one is left as it is.
+- name: Set the shared login on a fresh install
   servarr_resource:
-    url: "{{ app_config_urls[item.key] }}"
-    api_key: "{{ _app_config_api_keys[item.key] }}"
-    api_version: "{{ item.value.api }}"
+    url: "{{ app_config_urls[item.item.key] }}"
+    api_key: "{{ _app_config_api_keys[item.item.key] }}"
+    api_version: "{{ item.item.value.api }}"
     endpoint: config/host
     singleton: true
     body:
@@ -33,8 +42,8 @@
       username: "{{ homelab_username }}"
       password: "{{ homelab_password }}"
       passwordConfirmation: "{{ homelab_password }}"
-      trustedNetworks: ""
-  loop: "{{ app_config_servarr | dict2items }}"
+  loop: "{{ _app_config_hosts.results }}"
   loop_control:
-    label: "{{ item.key }}"
+    label: "{{ item.item.key }}"
+  when: item.json.authenticationMethod | lower != 'forms'
   no_log: true

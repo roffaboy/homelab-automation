@@ -246,6 +246,14 @@ app_config_trash_profiles:
   radarr: 64fb5f9858489bdac2af690e27c8f42f
   sonarr: 9d142234e45d6143785ac55f5a9e8dc9
 
+# Profiles Radarr and Sonarr create on install (HD-1080p is kept: Recyclarr fills it).
+app_config_stock_profiles:
+  - Any
+  - SD
+  - HD-720p
+  - Ultra-HD
+  - HD - 720p/1080p
+
 # The custom format groups of TRaSH's guide that the profiles add next to the profile itself (ids
 # from the guide's docs/json/<app>/cf-groups). A group lists the formats it leaves out while x265
 # is allowed (app_config_recyclarr_block_x265_hd false).

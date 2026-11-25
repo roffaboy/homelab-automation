@@ -80,6 +80,19 @@
   retries: 6
   delay: 10
 
+# Only the TRaSH profiles from Recyclarr are left to choose from.
+- name: Arr | Remove the stock quality profiles
+  servarr_resource:
+    url: "{{ app_config_urls[item.0.name] }}"
+    api_key: "{{ _app_config_api_keys[item.0.name] }}"
+    endpoint: qualityprofile
+    body:
+      name: "{{ item.1 }}"
+    state: absent
+  loop: "{{ app_config_arrs | product(app_config_stock_profiles) | list }}"
+  loop_control:
+    label: "{{ item.0.name }}: {{ item.1 }}"
+
 - name: Arr | Telegram notifications
   servarr_resource:
     url: "{{ app_config_urls[item.name] }}"
