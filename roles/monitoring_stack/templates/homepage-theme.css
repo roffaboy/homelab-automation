@@ -188,3 +188,13 @@ li.service .h-5 > * {
 .service-container ~ .h-5.m-1 ~ .h-5.m-1 ~ .h-5.m-1 ~ .h-5.m-1 ~ .h-5.m-1 ~ .h-5.m-1 {
   display: none;
 }
+
+/* Narrow screens and touch: the red block of the hover would be cut off at the edge of the page and
+   stay behind as a loose line, so there the hover is just the light edge. */
+@media (max-width: 640px), (hover: none) {
+  li.service:hover > div,
+  .bookmark:hover > a {
+    box-shadow: inset 0 0 0 2px var(--edge) !important;
+    transform: none;
+  }
+}
