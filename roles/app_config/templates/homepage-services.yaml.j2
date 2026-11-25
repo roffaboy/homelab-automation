@@ -3,131 +3,47 @@
 # Links go to the server's LAN address; widgets and status dots reach the apps on the Docker
 # network.
 {% macro href(app) %}http://{{ homelab_lan_ip }}:{{ homelab_ports[app] }}{% endmacro %}
+{# One tile of the catalogue (inventory/group_vars/homelab/services.yml). #}
+{% macro tile(key, t) %}
+    - {{ t.title }}:
+        icon: {{ t.icon }}
+{% if t.link | default(true) %}
+        href: {{ href(key) }}
+{% endif %}
+        siteMonitor: http://{{ t.host }}:{{ t.port }}{{ t.monitor_path | default('') }}
+{% if t.widget is defined %}
+        widget:
+          type: {{ t.widget.type }}
+{% if t.widget.version is defined %}
+          version: {{ t.widget.version }}
+{% endif %}
+          url: http://{{ t.host }}:{{ t.port }}
+{% if t.widget.auth | default('') == 'key' %}
+          key: {{ t.widget.key }}
+{% elif t.widget.auth | default('') == 'login' %}
+          username: {{ homelab_username | to_json }}
+          password: {{ homelab_password | to_json }}
+{% endif %}
+{% for name, value in (t.widget.extra | default({})).items() %}
+          {{ name }}: {{ value | to_json }}
+{% endfor %}
+{% endif %}
+{% endmacro %}
 # Tiles by what they are for, grouped under tabs in settings.yaml (monitoring_stack).
-- Watch:
-    - Jellyfin:
-        icon: jellyfin.png
-        href: {{ href('jellyfin') }}
-        siteMonitor: http://jellyfin:8096
-        widget:
-          type: jellyfin
-          version: 2
-          url: http://jellyfin:8096
-          key: {{ _app_config_jellyfin_api_key }}
-          enableBlocks: true
-          enableNowPlaying: true
+{% for group in homelab_service_groups %}
+{% set shown = [] %}
+{% for key, t in homelab_services.items() if t.group == group and t.enabled | default(true) | bool %}
+{% set _ = shown.append(key) %}
+{% endfor %}
+{% if shown | length > 0 %}
 
-- Request:
-    - Seerr:
-        icon: seerr.png
-        href: {{ href('seerr') }}
-        siteMonitor: http://seerr:5055
-        widget:
-          type: seerr
-          url: http://seerr:5055
-          key: {{ _app_config_seerr_key }}
-{% if homelab_suggestarr | bool %}
-    - SuggestArr:
-        icon: suggest-arr.png
-        href: {{ href('suggestarr') }}
-        siteMonitor: http://suggestarr:5000
+- {{ group }}:
+{% for key in shown %}
+{{ tile(key, homelab_services[key]) }}
+{% endfor %}
 {% endif %}
-{% if homelab_books | bool %}
-
-- Read:
-    - Calibre-Web:
-        icon: calibre-web.png
-        href: {{ href('calibre') }}
-        siteMonitor: http://calibre:8083
-        widget:
-          type: calibreweb
-          url: http://calibre:8083
-          username: {{ homelab_username | to_json }}
-          password: {{ homelab_password | to_json }}
-{% endif %}
-
-- Library:
-    - Radarr:
-        icon: radarr.png
-        href: {{ href('radarr') }}
-        siteMonitor: http://radarr:7878
-        widget:
-          type: radarr
-          url: http://radarr:7878
-          key: {{ _app_config_api_keys.radarr }}
-          enableQueue: true
-    - Sonarr:
-        icon: sonarr.png
-        href: {{ href('sonarr') }}
-        siteMonitor: http://sonarr:8989
-        widget:
-          type: sonarr
-          url: http://sonarr:8989
-          key: {{ _app_config_api_keys.sonarr }}
-          enableQueue: true
-{% if homelab_bazarr | bool %}
-    - Bazarr:
-        icon: bazarr.png
-        href: {{ href('bazarr') }}
-        siteMonitor: http://bazarr:6767
-        widget:
-          type: bazarr
-          url: http://bazarr:6767
-          key: {{ _app_config_bazarr_key }}
-{% endif %}
-
-- Sources:
-    - Prowlarr:
-        icon: prowlarr.png
-        href: {{ href('prowlarr') }}
-        siteMonitor: http://prowlarr:9696
-        widget:
-          type: prowlarr
-          url: http://prowlarr:9696
-          key: {{ _app_config_api_keys.prowlarr }}
-    - qBittorrent:
-        icon: qbittorrent.png
-        href: {{ href('qbittorrent') }}
-        siteMonitor: http://gluetun:{{ homelab_ports.qbittorrent }}
-        widget:
-          type: qbittorrent
-          url: http://gluetun:{{ homelab_ports.qbittorrent }}
-          username: {{ homelab_username | to_json }}
-          password: {{ homelab_password | to_json }}
-
-- Cleanup:
-    - Cleanuparr:
-        icon: cleanuparr.png
-        href: {{ href('cleanuparr') }}
-        siteMonitor: http://cleanuparr:11011/health
-    - Maintainerr:
-        icon: maintainerr.png
-        href: {{ href('maintainerr') }}
-        siteMonitor: http://maintainerr:6246
-        widget:
-          type: maintainerr
-          url: http://maintainerr:6246
-          fields: [reclaimable, itemsHandled]
-
+{% endfor %}
 {% if homelab_monitoring | bool %}
-
-- Monitoring:
-    - Grafana:
-        icon: grafana.png
-        href: {{ href('grafana') }}
-        siteMonitor: http://grafana:3000
-        widget:
-          type: grafana
-          version: 2
-          url: http://grafana:3000
-          username: {{ homelab_username | to_json }}
-          password: {{ homelab_password | to_json }}
-    - Prometheus:
-        icon: prometheus.png
-        siteMonitor: http://prometheus:9090
-        widget:
-          type: prometheus
-          url: http://prometheus:9090
 {% if homelab_backup_remote %}
 
 - Storage:
