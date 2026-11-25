@@ -41,6 +41,11 @@ jobs:
         run: |
           cp -r config.example config
           echo ci >.vault_pass
+      - name: Unit tests of the modules
+        run: |
+          python3 -m venv /tmp/tests-venv
+          /tmp/tests-venv/bin/pip install -q -r requirements.txt
+          /tmp/tests-venv/bin/python -m unittest discover -s tests
       - uses: ansible/ansible-lint@v26.11.0
 
   # The install runs on both Ubuntu LTS versions the playbook supports, next to each other. The
@@ -75,6 +80,12 @@ jobs:
           vault_simkl_client_id: test
           vault_omdb_api_key: test
           VAULT
+          # Seerr's defaults go through rest_settings: the first run sets them, the second must not.
+          cat >>config/settings.yml <<'SETTINGS'
+          app_config_seerr_discover:
+            originalLanguage: "nl|en"
+            streamingRegion: NL
+          SETTINGS
           cp config.example/maintainerr.yml config/   # the example rules are tested too
 
       - name: Setup

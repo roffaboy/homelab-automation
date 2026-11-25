@@ -114,9 +114,9 @@ resource:
 
 import json
 from copy import deepcopy
+from urllib.error import HTTPError
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.six.moves.urllib.error import HTTPError
 from ansible.module_utils.urls import open_url
 
 HIDDEN = "********"  # what the API returns instead of a stored secret
