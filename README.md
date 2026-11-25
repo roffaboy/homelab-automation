@@ -303,7 +303,7 @@ The linked folders have a short README of their own.
 | Bazarr | Radarr/Sonarr connection, subtitles for everything in your languages (`app_config_bazarr_profile`, English by default), OpenSubtitles, SubDL and Subsource (optional, account or key in the vault). Optional (`homelab_bazarr`) |
 | SuggestArr | Optional (`homelab_suggestarr`): your login, Jellyfin (and whose watching it follows), Seerr, TMDb, Simkl and OMDb, filters (`app_config_suggestarr_settings`), approval before anything is requested |
 | Calibre-Web | Optional (`homelab_books`): your login instead of the default admin, Kobo sync with the Kobo store passed through, more users and their Kobo tokens (`vault_calibre_users`) |
-| Grafana | Optional (`homelab_monitoring`): Prometheus datasource and one Homelab dashboard (server and containers) as home page |
+| Grafana | Optional (`homelab_monitoring`): Prometheus datasource, and the dashboards you put in `config/grafana-dashboards/` (`home.json` there is the home page) |
 | Homepage | Optional (`homelab_homepage`): every app with a link and a live widget (queues, streams, downloads), server load, and an Accounts tab with the outside services it uses (add your own: `app_config_accounts`) |
 
 Anything not managed here, such as extra Jellyfin users and libraries or indexers you add by hand,
