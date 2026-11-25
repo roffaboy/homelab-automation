@@ -10,6 +10,7 @@ Run: python3 -m unittest discover -s tests
 import contextlib
 import io
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -242,6 +243,17 @@ class Deploys(Case):
         self.fake.answers.pop((".venv/bin/ansible-playbook",))
         self.assertEqual(self.go(), 0)
         self.assertTrue(self.said("Updated to"))
+
+
+class WithoutConfigRepo(Case):
+    def test_a_failed_commit_is_also_remembered_when_there_is_no_config_repo(self):
+        shutil.rmtree(self.config)
+        commit(self.github, "provision.yml", "v2")
+        self.fake.answers[(".venv/bin/ansible-playbook",)] = (2, ANSIBLE_FAILURE)
+        self.assertEqual(self.go(), 1)
+        runs = len(self.playbook_runs())
+        self.assertEqual(self.go(), 0)
+        self.assertEqual(len(self.playbook_runs()), runs)
 
 
 class Backups(Case):

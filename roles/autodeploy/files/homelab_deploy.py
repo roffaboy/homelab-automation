@@ -187,7 +187,7 @@ class Deploy:
         if fetched is None:
             return 1
         old, new, config_old, config_new = fetched
-        commits = f"{new} {config_new}"
+        commits = f"{new} {config_new}".strip()   # without a config repo there is only the main commit
         if not force:
             if new == old and config_new == config_old:
                 return 0
