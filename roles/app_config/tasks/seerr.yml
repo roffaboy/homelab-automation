@@ -227,24 +227,10 @@
     - _app_config_jellyfin_api_key is defined
     - "'Jellyfin Enhanced' in _app_config_seerr_jf_plugins.json | map(attribute='Name')"
   block:
-    - name: Seerr | Read Jellyfin Enhanced's settings
-      ansible.builtin.uri:
+    - name: Seerr | Jellyfin Enhanced's settings
+      rest_settings:
         url: "{{ _url }}"
         headers:
           Authorization: "{{ _auth }}"
-      register: _app_config_seerr_je
-      check_mode: false
-      no_log: true
-
-    - name: Seerr | Save Jellyfin Enhanced's settings
-      ansible.builtin.uri:
-        url: "{{ _url }}"
-        method: POST
-        headers:
-          Authorization: "{{ _auth }}"
-        body_format: json
-        body: "{{ _app_config_seerr_je.json | combine(_settings) }}"
-        status_code: 204
-      when: _app_config_seerr_je.json | combine(_settings) != _app_config_seerr_je.json
-      changed_when: true
+        wanted: "{{ _settings }}"
       no_log: true

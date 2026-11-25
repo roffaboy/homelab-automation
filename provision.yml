@@ -150,3 +150,14 @@
     - role: autodeploy
       tags: autodeploy
       when: homelab_repo | default('') | length > 0
+
+  # After every stack is up, so what runs is in use: what no container uses any more goes (old image
+  # versions after an update take most of the disk).
+  post_tasks:
+    - name: Remove stopped containers, unused images and unused volumes
+      community.docker.docker_prune:
+        containers: true
+        images: true
+        images_filters:
+          dangling: false
+        volumes: true   # anonymous ones of replaced containers; the apps' data is in folders
