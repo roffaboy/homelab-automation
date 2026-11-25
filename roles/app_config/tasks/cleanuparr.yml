@@ -113,20 +113,14 @@
   no_log: true
 
 - name: Cleanuparr | Queue cleaner
-  vars:
-    _settings:
-      enabled: true
-      downloadingMetadataMaxStrikes: "{{ app_config_cleanuparr_metadata_strikes }}"
-    _current: "{{ _app_config_cleanuparr['configuration/queue_cleaner'] }}"
-  ansible.builtin.uri:
+  rest_settings:
     url: "{{ app_config_urls.cleanuparr }}/api/configuration/queue_cleaner"
-    method: PUT
     headers:
       Authorization: "Bearer {{ _app_config_cleanuparr_login.json.tokens.accessToken }}"
-    body_format: json
-    body: "{{ _current | combine(_settings) }}"
-  when: _current | combine(_settings) != _current
-  changed_when: true
+    write_method: PUT
+    wanted:
+      enabled: true
+      downloadingMetadataMaxStrikes: "{{ app_config_cleanuparr_metadata_strikes }}"
 
 - name: Cleanuparr | Remove stalled downloads
   vars:
