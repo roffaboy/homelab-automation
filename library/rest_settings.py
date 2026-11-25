@@ -134,6 +134,8 @@ def request(module, method, url, headers, data=None):
         response = open_url(url, method=method, headers=dict(headers, **{"Content-Type": "application/json"}),
                             timeout=60, data=None if data is None else json.dumps(data))
         raw = response.read()
+        if method != "GET":
+            return None   # what the app answers to a save is not needed, and need not be JSON
         return json.loads(raw) if raw else None
     except HTTPError as e:
         module.fail_json(msg="%s %s failed: HTTP %s" % (method, url, e.code), response=e.read().decode(errors="replace"))

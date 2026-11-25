@@ -21,6 +21,7 @@ class App(BaseHTTPRequestHandler):
     state = {}
     writes = []
     fail = False
+    plain_reply = False
 
     def log_message(self, *args):
         pass
@@ -40,7 +41,13 @@ class App(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         App.writes.append((self.command, self.headers.get("X-Api-Key"), body))
         App.state = body
-        self.reply(200, body)
+        if App.plain_reply:   # some apps answer a save with plain text, or nothing
+            self.send_response(200)
+            self.send_header("Content-Length", "2")
+            self.end_headers()
+            self.wfile.write(b"OK")
+        else:
+            self.reply(200, body)
 
     do_POST = do_PUT = do_PATCH = do_write
 
@@ -89,6 +96,7 @@ class Module(unittest.TestCase):
         App.state = {"enabled": False, "apiKey": "read-only", "options": {"chatId": "1", "botAPI": "x"}}
         App.writes = []
         App.fail = False
+        App.plain_reply = False
 
     def run_module(self, **args):
         args.setdefault("url", self.url)
@@ -144,6 +152,12 @@ class Module(unittest.TestCase):
         self.assertTrue(result["changed"])
         self.assertNotIn("old-bot-token", json.dumps(result))
         self.assertNotIn("new-bot-token", json.dumps(result))
+
+    def test_an_answer_to_a_save_that_is_not_json_is_fine(self):
+        App.plain_reply = True
+        result = self.run_module(wanted={"enabled": True})
+        self.assertTrue(result["changed"])
+        self.assertEqual(len(App.writes), 1)
 
     def test_an_app_error_fails_the_module_with_the_address(self):
         App.fail = True
