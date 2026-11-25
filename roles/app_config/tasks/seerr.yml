@@ -1,6 +1,6 @@
 ---
 # Fresh install: sign in with the Jellyfin admin, enable the libraries, add Radarr and
-# Sonarr as default servers. Existing Seerr servers are left as they are.
+# Sonarr as default servers (kept the way they are set here).
 
 - name: Seerr | Read the setup state
   ansible.builtin.uri:
@@ -23,31 +23,23 @@
     _app_config_seerr_key: "{{ (_app_config_seerr_settings.content | b64decode | from_json).main.apiKey }}"
   no_log: true
 
-- name: Seerr | Read the Radarr and Sonarr servers
+# Radarr and Sonarr as Seerr's default servers, kept the way they are set here: a changed folder
+# or profile is put back (the profile follows app_config_quality_profiles).
+- name: Seerr | Read the quality profiles
   ansible.builtin.uri:
-    url: "{{ app_config_urls.seerr }}/api/v1/settings/{{ item.name }}"
+    url: "{{ app_config_urls[item.name] }}/api/v3/qualityprofile"
     headers:
-      X-Api-Key: "{{ _app_config_seerr_key }}"
+      X-Api-Key: "{{ _app_config_api_keys[item.name] }}"
   loop: "{{ app_config_arrs }}"
   loop_control:
     label: "{{ item.name }}"
-  register: _app_config_seerr_servers
+  register: _app_config_seerr_all_profiles
   check_mode: false
+  no_log: true
 
-- name: Seerr | Read the quality profiles of apps without a server
-  ansible.builtin.uri:
-    url: "{{ app_config_urls[item.item.name] }}/api/v3/qualityprofile"
-    headers:
-      X-Api-Key: "{{ _app_config_api_keys[item.item.name] }}"
-  loop: "{{ _app_config_seerr_servers.results }}"
-  loop_control:
-    label: "{{ item.item.name }}"
-  when: item.json | length == 0
-  register: _app_config_seerr_profiles
-
-- name: Seerr | Add Radarr and Sonarr as default servers
+- name: Seerr | Radarr and Sonarr as default servers
   vars:
-    _arr: "{{ item.item.item }}"
+    _arr: "{{ item.item }}"
     _profile: "{{ item.json | selectattr('name', 'equalto', app_config_quality_profiles[_arr.name]) | first }}"
     _server:
       name: "{{ _arr.name | capitalize }}"
@@ -75,67 +67,15 @@
         activeAnimeProfileName: "{{ _profile.name }}"
         activeAnimeDirectory: "{{ _arr.root_folder }}"
         enableSeasonFolders: true
-  ansible.builtin.uri:
+  api_resource:
     url: "{{ app_config_urls.seerr }}/api/v1/settings/{{ _arr.name }}"
-    method: POST
     headers:
       X-Api-Key: "{{ _app_config_seerr_key }}"
-    body_format: json
-    body: "{{ _server | combine(_extra[_arr.name]) }}"
-    status_code:
-      - 200
-      - 201
-  loop: "{{ _app_config_seerr_profiles.results | rejectattr('skipped', 'defined') }}"
+    read_only: [id]   # the id is in the address; Seerr refuses it in the body
+    wanted: "{{ _server | combine(_extra[_arr.name]) }}"
+  loop: "{{ _app_config_seerr_all_profiles.results }}"
   loop_control:
-    label: "{{ item.item.item.name }}"
-  changed_when: true
-  no_log: true
-
-# A server that exists keeps its settings, except the default profile: it follows
-# app_config_quality_profiles (the old one may be gone by now).
-- name: Seerr | Read the quality profiles
-  ansible.builtin.uri:
-    url: "{{ app_config_urls[item.name] }}/api/v3/qualityprofile"
-    headers:
-      X-Api-Key: "{{ _app_config_api_keys[item.name] }}"
-  loop: "{{ app_config_arrs }}"
-  loop_control:
-    label: "{{ item.name }}"
-  register: _app_config_seerr_all_profiles
-  check_mode: false
-  no_log: true
-
-- name: Seerr | Use the profile of the setup in the servers that exist
-  vars:
-    _arr: "{{ item.0.item }}"
-    _wanted: "{{ app_config_quality_profiles[_arr.name] }}"
-    _found: >-
-      {{ (_app_config_seerr_all_profiles.results | selectattr('item.name', 'equalto', _arr.name) | first).json
-         | selectattr('name', 'equalto', _wanted) | list }}
-    _set:
-      activeProfileId: "{{ (_found | first).id | default(0) }}"
-      activeProfileName: "{{ _wanted }}"
-    _anime:
-      activeAnimeProfileId: "{{ (_found | first).id | default(0) }}"
-      activeAnimeProfileName: "{{ _wanted }}"
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.seerr }}/api/v1/settings/{{ _arr.name }}/{{ item.1.id }}"
-    method: PUT
-    headers:
-      X-Api-Key: "{{ _app_config_seerr_key }}"
-    body_format: json
-    # The id is in the address; Seerr refuses it in the body (read-only).
-    body: >-
-      {{ item.1 | dict2items | rejectattr('key', 'equalto', 'id') | items2dict
-         | combine(_set) | combine(_anime if _arr.name == 'sonarr' else {}) }}
-  loop: "{{ _app_config_seerr_servers.results | subelements('json', skip_missing=True) }}"
-  loop_control:
-    label: "{{ item.0.item.name }}: {{ item.1.name }}"
-  when:
-    - not item.1.is4k | default(false)
-    - item.1.activeProfileName != app_config_quality_profiles[item.0.item.name]
-    - (_found | length) > 0
-  changed_when: true
+    label: "{{ item.item.name }}"
   no_log: true
 
 - name: Seerr | Finish the setup
