@@ -211,6 +211,80 @@ app_config_jellyfin_encoding:
   EnableDecodingColorDepth10Hevc: true
   EnableDecodingColorDepth10Vp9: true
 
+# The qualities each profile allows, best first (names as Radarr and Sonarr have them). Recyclarr
+# sets their sizes and, for movies, the profile.
+app_config_profile_qualities:
+  movie:
+    - Bluray-2160p
+    - WEBDL-2160p
+    - WEBRip-2160p
+    - Bluray-1080p
+    - WEBDL-1080p
+    - WEBRip-1080p
+    - Bluray-720p
+    - WEBDL-720p
+    - WEBRip-720p
+  series:
+    - HDTV-720p
+    - WEBDL-720p
+    - WEBRip-720p
+    - Bluray-720p
+    - HDTV-1080p
+    - WEBDL-1080p
+    - WEBRip-1080p
+    - Bluray-1080p
+# Their sizes are set too, for the language profiles that add them (Radarr's own defaults would
+# do for DVD).
+app_config_profile_extra_sizes:
+  movie:
+    - HDTV-720p
+    - HDTV-1080p
+  series: []
+# TRaSH's profiles: UHD Bluray + WEB for movies, with 1080p and 720p added below it so nothing
+# waits for a 2160p release; WEB-1080p (Alternative) for series.
+app_config_trash_profiles:
+  radarr: 64fb5f9858489bdac2af690e27c8f42f
+  sonarr: 9d142234e45d6143785ac55f5a9e8dc9
+
+# Profiles Radarr and Sonarr create on install (HD-1080p is kept: Recyclarr fills it).
+app_config_stock_profiles:
+  - Any
+  - SD
+  - HD-720p
+  - Ultra-HD
+  - HD - 720p/1080p
+
+# The custom format groups of TRaSH's guide that the profiles add next to the profile itself (ids
+# from the guide's docs/json/<app>/cf-groups). A group lists the formats it leaves out while x265
+# is allowed (app_config_recyclarr_block_x265_hd false).
+app_config_recyclarr_groups:
+  radarr:
+    - trash_id: f8bf8eab4617f12dfdbd16303d8da245  # [Optional] Golden Rule HD (the profile pulls it in; it is listed so x265 (HD) can be left out)
+      exclude_when_x265_allowed:
+        - dc98083864ea246d05a42df0d05f81cc  # x265 (HD)
+    - trash_id: a3ac6af01d78e4f21fcb75f601ac96df  # [Unwanted] Unwanted Formats (BR-DISK, LQ, 3D, Extras, Upscaled, ...)
+  sonarr:
+    - trash_id: 158188097a58d7687dee647e04af0da3  # [Optional] Golden Rule HD (the profile pulls it in; it is listed so x265 (HD) can be left out)
+      exclude_when_x265_allowed:
+        - 47435ece6b99a0b477caf360e79ba0bb  # x265 (HD)
+    - trash_id: 74aff4168620ed49dcc67e92b2c2a5b4  # [Optional] Language Profiles
+    - trash_id: 85fae4a2294965b75710ef2989c850eb  # [Streaming Services] HD/UHD boost
+    - trash_id: 59c3af66780d08332fdc64e68297098f  # [Unwanted] Unwanted Formats (BR-DISK, LQ, Extras, Upscaled, ...)
+
+# The score of a custom format in each app's quality profile, the format's trash_id first. While x265
+# is allowed, "x265 (no HDR/DV)" is scored 0: TRaSH's -10000 would hit every 1080p x265 file, which
+# would then sit below the profile's minimum and be "upgraded" again and again.
+# Your own, on top of that: app_config_recyclarr_extra_scores, for example
+#   app_config_recyclarr_extra_scores:
+#     radarr:
+#       839bea857ed2c0a8e084f3cbdbd65ecb: -10000   # block x265 without HDR/DV again
+app_config_recyclarr_scores:
+  radarr: "{{ {} if app_config_recyclarr_block_x265_hd | bool else {'839bea857ed2c0a8e084f3cbdbd65ecb': 0} }}"
+  sonarr: {}
+app_config_recyclarr_extra_scores:
+  radarr: {}
+  sonarr: {}
+
 # TRaSH blocks 1080p x265 encodes (and x265 without HDR/DV); false keeps them allowed (small files).
 app_config_recyclarr_block_x265_hd: false
 # Upgrade files until TRaSH's score cutoff (usually to bigger releases).

@@ -35,6 +35,19 @@ homelab_tailscale: true
 #       - DVD
 #       - HDTV-720p
 #       - WEB 720p
+# Radarr's and Sonarr's quality profiles are TRaSH's, filled in by Recyclarr. What you can change
+# (the defaults are in roles/app_config/defaults/main.yml):
+#   app_config_recyclarr_block_x265_hd: true   # TRaSH's rule: no x265 for 1080p (default false: small files allowed)
+#   app_config_recyclarr_upgrades: false       # never replace a file by a better release
+#   app_config_profile_qualities:              # the qualities of the movie profile, best first, and the series sizes
+#     movie: [Bluray-1080p, WEBDL-1080p, WEBRip-1080p]
+#     series: [WEBDL-1080p, WEBRip-1080p]
+# The score of one custom format in a profile (its trash_id from TRaSH's guide, docs/json/<app>/cf),
+# on top of the defaults, e.g. scoring "x265 (no HDR/DV)" -10000 again:
+# app_config_recyclarr_extra_scores:
+#   radarr:
+#     839bea857ed2c0a8e084f3cbdbd65ecb: -10000
+#   sonarr: {}
 # The country Jellyfin uses for ratings and release dates (default US), e.g.:
 # app_config_jellyfin_country: NL
 # Seerr: discover movies and series in these original languages, and show where they stream:
