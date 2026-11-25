@@ -6,12 +6,15 @@ Ansible for a single Ubuntu home server: request a movie or series, it downloads
 in Jellyfin. The playbook installs the apps below in Docker, connects them to each other and
 publishes their web UIs on your home network, and over Tailscale away from home.
 
-| | |
-|---|---|
-| **Watch and request** | [![Jellyfin](https://img.shields.io/badge/Jellyfin-00A4DC?style=for-the-badge&logo=jellyfin&logoColor=white)](https://jellyfin.org) [![Seerr](https://img.shields.io/badge/Seerr-5969F8?style=for-the-badge)](https://github.com/seerr-team/seerr) |
-| **Find and download** | [![Prowlarr](https://img.shields.io/badge/Prowlarr-E66000?style=for-the-badge)](https://prowlarr.com) [![Radarr](https://img.shields.io/badge/Radarr-FFCB3D?style=for-the-badge&logo=radarr&logoColor=white)](https://radarr.video) [![Sonarr](https://img.shields.io/badge/Sonarr-2596BE?style=for-the-badge&logo=sonarr&logoColor=white)](https://sonarr.tv) [![qBittorrent](https://img.shields.io/badge/qBittorrent-2F67BA?style=for-the-badge&logo=qbittorrent&logoColor=white)](https://www.qbittorrent.org) [![Cleanuparr](https://img.shields.io/badge/Cleanuparr-7C3AED?style=for-the-badge)](https://github.com/Cleanuparr/Cleanuparr) [![Maintainerr](https://img.shields.io/badge/Maintainerr-D97706?style=for-the-badge)](https://github.com/maintainerr/maintainerr) [![Recyclarr](https://img.shields.io/badge/Recyclarr-4B5563?style=for-the-badge)](https://recyclarr.dev) |
-| **Optional** | [![Bazarr](https://img.shields.io/badge/Bazarr-3A6EA5?style=for-the-badge)](https://www.bazarr.media) [![SuggestArr](https://img.shields.io/badge/SuggestArr-6D28D9?style=for-the-badge)](https://github.com/giuseppe99barchetta/SuggestArr) [![Calibre-Web](https://img.shields.io/badge/Calibre--Web-45B29D?style=for-the-badge&logo=calibreweb&logoColor=white)](https://github.com/crocodilestick/Calibre-Web-Automated) [![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)](https://grafana.com) [![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](https://prometheus.io) [![Homepage](https://img.shields.io/badge/Homepage-009BD5?style=for-the-badge&logo=homepage&logoColor=white)](https://gethomepage.dev) |
-| **Built on** | [![Ansible](https://img.shields.io/badge/Ansible-EE0000?style=for-the-badge&logo=ansible&logoColor=white)](https://www.ansible.com) [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com) [![Tailscale](https://img.shields.io/badge/Tailscale-242424?style=for-the-badge&logo=tailscale&logoColor=white)](https://tailscale.com) [![WireGuard](https://img.shields.io/badge/WireGuard-88171A?style=for-the-badge&logo=wireguard&logoColor=white)](https://www.wireguard.com) |
+Installed: [Jellyfin](https://jellyfin.org) and [Seerr](https://github.com/seerr-team/seerr) (watch and
+request); [Prowlarr](https://prowlarr.com), [Radarr](https://radarr.video), [Sonarr](https://sonarr.tv),
+[qBittorrent](https://www.qbittorrent.org), [Cleanuparr](https://github.com/Cleanuparr/Cleanuparr),
+[Maintainerr](https://github.com/maintainerr/maintainerr) and [Recyclarr](https://recyclarr.dev) (find,
+download and tidy up). Optional: [Bazarr](https://www.bazarr.media),
+[SuggestArr](https://github.com/giuseppe99barchetta/SuggestArr),
+[Calibre-Web](https://github.com/crocodilestick/Calibre-Web-Automated),
+[Grafana](https://grafana.com) with [Prometheus](https://prometheus.io), and
+[Homepage](https://gethomepage.dev). Built on Ansible, Docker, Tailscale and WireGuard.
 
 Each optional app has its own switch ([Options](#options)): subtitles, ebooks with Kobo sync
 (Calibre-Web Automated), suggestions from what you watch (SuggestArr), graphs and a start page.
@@ -23,9 +26,18 @@ differ from this repo are changed. One username and password is used for every s
 No sites to download from are included: you add the indexers you choose yourself. Only
 download what you are allowed to where you live.
 
+## Requirements
+
+- One server (a mini PC will do) with Ubuntu Server 26.04, the version CI installs on, and a user
+  with `sudo`. A fixed address in your router (a DHCP reservation) and internet access.
+- For hardware transcoding, an Intel GPU (`/dev/dri`, VA-API). Without one Jellyfin transcodes in
+  software; the playbook notices.
+- Optional: a Tailscale account (to reach the apps away from home), a WireGuard config from your
+  VPN provider (for downloads), a Telegram bot, a cloud drive for offsite backups.
+
 ## Quick start
 
-On a server with Ubuntu 26.04 and a user with `sudo`:
+On that server:
 
 ```bash
 sudo apt install -y git
@@ -290,6 +302,26 @@ The linked folders have a short README of their own.
 
 Anything not managed here, such as extra Jellyfin users and libraries or indexers you add by hand,
 is left alone. Settings that are managed here are set back on the next run.
+
+## Security
+
+Meant for a home network behind your router's NAT, not for the internet.
+
+- **Never forward a port to it.** Every web UI listens on all IPv4 addresses of the server
+  (`homelab_publish_ip`). Docker's published ports bypass `ufw`, so the firewall will not help.
+  Away from home, use Tailscale.
+- **Homepage, Maintainerr and Prometheus have no login:** anyone on your Wi-Fi can open them. The
+  other apps use the one username and password from `vault.yml`, so make it a long one.
+- Secrets live in the encrypted `config/vault.yml`; the playbook keeps them out of its output
+  (`no_log`) and out of the server's journal. The vault password is in `.vault_pass`, not in git.
+- Two containers are more privileged than the rest: cAdvisor (`privileged`, to read container
+  metrics) and autoheal (the Docker socket, to restart unhealthy containers; no network).
+- Automatic deploys run the playbook, as your user with `sudo`, from the `main` branch of *your*
+  fork, over a read-only deploy key. Whoever can push to that branch controls the server, so protect
+  it (a branch ruleset, no force pushes).
+- `reset.sh` wipes the app data, and the media unless you pass `--keep-media`; it asks you to type
+  `reset` first. Provisioning keeps the app data. What deletes media is the cleanup you configure
+  yourself: Maintainerr's rules and Cleanuparr.
 
 ## Contributing
 
