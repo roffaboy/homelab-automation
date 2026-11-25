@@ -9,9 +9,9 @@ homelab_suggestarr: false
 homelab_tailscale: true
 # Jellyfin's theme for every browser, app and Dashboard that has not chosen one: dark (default) or light.
 # homelab_jellyfin_theme: light
-# Homepage in the style of Holyfin (default), or false for Homepage's own look with no custom CSS, and its
-# theme, dark (default) or light:
-# homelab_homepage_custom_theme: false
+# Optional: Homepage in the style of Holyfin (default false: Homepage's own look, no custom CSS), and
+# its theme, dark (default) or light:
+# homelab_homepage_custom_theme: true
 # homelab_homepage_theme: light
 # A nightly backup of the app data and ebooks to the cloud (README, Offsite backup), e.g.:
 # homelab_backup_remote: "gdrive:Backup/homelab"
