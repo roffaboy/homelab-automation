@@ -1,0 +1,54 @@
+---
+# Radarr and Sonarr keep the profiles they create themselves and the ones an earlier version of this
+# playbook made. Only what the configuration names stays: the main profile of each app (Recyclarr
+# fills it) and the language profiles made from it, or a profile that a movie or series still uses
+# (it is left alone, so nothing loses its profile).
+
+- name: Profiles | Read the quality profiles
+  ansible.builtin.uri:
+    url: "{{ app_config_urls[item.name] }}/api/v3/qualityprofile"
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys[item.name] }}"
+  loop: "{{ app_config_arrs }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: _app_config_pf_profiles
+  check_mode: false
+  no_log: true
+
+- name: Profiles | Read the movies and series, for the profiles they use
+  ansible.builtin.uri:
+    url: "{{ app_config_urls[item.name] }}/api/v3/{{ 'movie' if item.name == 'radarr' else 'series' }}"
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys[item.name] }}"
+  loop: "{{ app_config_arrs }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: _app_config_pf_used
+  check_mode: false
+  no_log: true
+
+- name: Profiles | Remove the ones that are not configured and not used
+  vars:
+    _arr: "{{ item.0.item }}"
+    _main: "{{ app_config_quality_profiles[_arr.name] }}"
+    _keep: "{{ [_main] + app_config_language_profiles | map(attribute='name') | map('regex_replace', '^', _main ~ ' - ') | list }}"
+    _used: >-
+      {{ (_app_config_pf_used.results | selectattr('item.name', 'equalto', _arr.name) | first).json
+         | map(attribute='qualityProfileId') | unique | list }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls[_arr.name] }}/api/v3/qualityprofile/{{ item.1.id }}"
+    method: DELETE
+    headers:
+      X-Api-Key: "{{ _app_config_api_keys[_arr.name] }}"
+    status_code:
+      - 200
+      - 204
+  loop: "{{ _app_config_pf_profiles.results | subelements('json') }}"
+  loop_control:
+    label: "{{ item.0.item.name }}: {{ item.1.name }}"
+  when:
+    - item.1.name not in _keep
+    - item.1.id not in _used
+  changed_when: true
+  no_log: true

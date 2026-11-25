@@ -38,6 +38,10 @@
 - name: Language profiles
   ansible.builtin.import_tasks: language_profiles.yml
   when: app_config_language_profiles | length > 0
+
+# After Recyclarr and the language profiles: what is left over from an earlier version goes.
+- name: Remove quality profiles that are not in the configuration
+  ansible.builtin.import_tasks: prune_profiles.yml
   tags: recyclarr
 
 - name: Seerr
