@@ -118,6 +118,16 @@ jobs:
           $PLAYBOOK | tee second-run.log
           grep -Eq ' changed=0 ' second-run.log
 
+      # The settings of every app after the install, to compare with a running server:
+      #   gh run download <run> -n fresh-config-ubuntu-26.04, then tools/dump-config.py on the server
+      - name: Dump the settings of the fresh install
+        run: .venv/bin/python tools/dump-config.py > fresh-config.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fresh-config-${{ matrix.os }}
+          path: fresh-config.json
+          retention-days: 14
+
       - name: Show the containers and their logs
         if: failure()
         run: |
