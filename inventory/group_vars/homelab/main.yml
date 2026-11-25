@@ -34,6 +34,9 @@ homelab_repo: "{{ vault_homelab_repo | default('') }}"
 
 # The test run on GitHub (.github/workflows/ci.yml) has no GPU: Jellyfin runs without /dev/dri.
 homelab_ci: false
+# Hardware transcoding needs the GPU's /dev/dri. Without it (a VM, a CPU without graphics) Jellyfin
+# runs without the device and transcodes in software, instead of failing to start.
+homelab_gpu: "{{ not homelab_ci | bool and '/dev/dri' is directory }}"
 
 # Optional parts. The search, download and watch apps (qBittorrent, Prowlarr, Radarr, Sonarr,
 # Jellyfin, Seerr) are always there. Change these in config/settings.yml.
