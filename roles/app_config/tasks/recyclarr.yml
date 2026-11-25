@@ -3,8 +3,6 @@
   ansible.builtin.template:
     src: recyclarr.yml.j2
     dest: "{{ homelab_stack_dirs.media }}/appdata/recyclarr/recyclarr.yml"
-    owner: "{{ homelab_uid }}"
-    group: "{{ homelab_gid }}"
     mode: "0600"
   diff: false   # contains API keys
 
