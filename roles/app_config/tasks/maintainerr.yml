@@ -1,15 +1,13 @@
 ---
 # Connects Maintainerr to Jellyfin, Radarr, Sonarr, Seerr and Telegram, and adds your rule groups
-# (config/maintainerr.yml). Each is added when missing; what you change in Maintainerr itself is
-# kept. Maintainerr has no login.
+# (config/maintainerr.yml). Radarr and Sonarr are kept the way Ansible knows them; the rest is added
+# when missing and then left alone. Maintainerr has no login.
 
 - name: Maintainerr | Read the connections
   ansible.builtin.uri:
     url: "{{ app_config_urls.maintainerr }}/api/settings/{{ item }}"
   loop:
     - jellyfin
-    - radarr
-    - sonarr
     - seerr
   register: _app_config_maintainerr_read
   check_mode: false
@@ -38,23 +36,19 @@
   failed_when: _app_config_maintainerr_jellyfin.json.status | default('NOK') != 'OK'
   no_log: true
 
+# Brought in line on every run: a changed address or API key is put back to what Ansible knows.
 - name: Maintainerr | Radarr and Sonarr
-  ansible.builtin.uri:
+  api_resource:
     url: "{{ app_config_urls.maintainerr }}/api/settings/{{ item.name }}"
-    method: POST
-    body_format: json
-    body:
+    match_key: serverName
+    wanted:
       serverName: "{{ item.name | capitalize }}"
       url: "http://{{ item.name }}:{{ item.port }}"
       apiKey: "{{ _app_config_api_keys[item.name] }}"
-    status_code: 201
+    response_check: {status: OK}
   loop: "{{ app_config_arrs }}"
   loop_control:
     label: "{{ item.name }}"
-  register: _app_config_maintainerr_arrs
-  when: _app_config_maintainerr[item.name] | length == 0
-  changed_when: true
-  failed_when: _app_config_maintainerr_arrs.json.status | default('NOK') != 'OK'
   no_log: true
 
 - name: Maintainerr | Seerr

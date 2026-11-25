@@ -55,7 +55,6 @@
     - configuration/radarr
     - configuration/sonarr
     - configuration/queue_cleaner
-    - queue-rules/stall
   register: _app_config_cleanuparr_read
   check_mode: false
   no_log: true
@@ -122,9 +121,13 @@
       enabled: true
       downloadingMetadataMaxStrikes: "{{ app_config_cleanuparr_metadata_strikes }}"
 
+# Kept the way it is here: a rule you change in Cleanuparr is put back.
 - name: Cleanuparr | Remove stalled downloads
-  vars:
-    _rule:
+  api_resource:
+    url: "{{ app_config_urls.cleanuparr }}/api/queue-rules/stall"
+    headers:
+      Authorization: "Bearer {{ _app_config_cleanuparr_login.json.tokens.accessToken }}"
+    wanted:
       name: Stalled
       enabled: true
       maxStrikes: "{{ app_config_cleanuparr_stalled_strikes }}"
@@ -132,16 +135,3 @@
       minCompletionPercentage: 0
       maxCompletionPercentage: 100
       resetStrikesOnProgress: true
-    _current: "{{ _app_config_cleanuparr['queue-rules/stall'] | selectattr('name', 'equalto', _rule.name) | first | default({}) }}"
-  ansible.builtin.uri:
-    url: "{{ app_config_urls.cleanuparr }}/api/queue-rules/stall{{ '/' ~ _current.id if _current else '' }}"
-    method: "{{ 'PUT' if _current else 'POST' }}"
-    headers:
-      Authorization: "Bearer {{ _app_config_cleanuparr_login.json.tokens.accessToken }}"
-    body_format: json
-    body: "{{ _current | combine(_rule) }}"
-    status_code:
-      - 200
-      - 201
-  when: _current | combine(_rule) != _current
-  changed_when: true
