@@ -64,6 +64,18 @@ radarr:
 {% endif %}
         - trash_id: a3ac6af01d78e4f21fcb75f601ac96df  # [Unwanted] Unwanted Formats (BR-DISK, LQ, 3D, Extras, Upscaled, ...)
 
+{% if not app_config_recyclarr_block_x265_hd | bool %}
+    # "x265 (no HDR/DV)" (-10000 in TRaSH's profile) would also hit every 1080p x265 file that is
+    # allowed above: such a file scores below the minimum, so Radarr keeps searching "upgrades" and
+    # grabs release after release that it then refuses to import (see app_config_recyclarr_block_x265_hd).
+    custom_formats:
+      - trash_ids:
+          - 839bea857ed2c0a8e084f3cbdbd65ecb  # x265 (no HDR/DV)
+        assign_scores_to:
+          - name: {{ app_config_quality_profiles.radarr }}
+            score: 0
+
+{% endif %}
     media_naming:
       folder: jellyfin-imdb
       movie:

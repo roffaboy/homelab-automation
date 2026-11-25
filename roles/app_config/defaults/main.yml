@@ -211,7 +211,7 @@ app_config_jellyfin_encoding:
   EnableDecodingColorDepth10Hevc: true
   EnableDecodingColorDepth10Vp9: true
 
-# TRaSH blocks 1080p x265 encodes; false keeps them allowed (small files).
+# TRaSH blocks 1080p x265 encodes (and x265 without HDR/DV); false keeps them allowed (small files).
 app_config_recyclarr_block_x265_hd: false
 # Upgrade files until TRaSH's score cutoff (usually to bigger releases).
 app_config_recyclarr_upgrades: true
