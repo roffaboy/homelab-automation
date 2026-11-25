@@ -44,6 +44,17 @@ options:
     description: Keys to set. Must include O(match_key) when O(state=present).
     type: dict
     default: {}
+  create_url:
+    description: Address new items are POSTed to, when it is not O(url).
+    type: str
+  recursive:
+    description: Merge nested objects key by key instead of replacing them whole (lists are always replaced).
+    type: bool
+    default: false
+  partial_update:
+    description: Save only the wanted keys, not the whole item, for apps that take a partial change.
+    type: bool
+    default: false
   id_key:
     description: Key holding the item's id, used for its own address.
     type: str
@@ -106,6 +117,7 @@ diff:
 """
 
 import json
+import re
 from copy import deepcopy
 from urllib.error import HTTPError
 
@@ -113,6 +125,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.urls import open_url
 
 HIDDEN = "********"
+MASK = re.compile(r"[*\u2022\u25cf\u00b7]{4,}")   # how apps show a secret they will not give back: ****, bullets
 
 
 # --- Pure helpers (no API calls) ---------------------------------------------------------
@@ -138,9 +151,36 @@ def find(items, match_key, value):
     return None
 
 
+def target_of(current, wanted, recursive):
+    """What the wanted keys should hold: the value itself, or (recursive) the item's nested object with it set."""
+    out = {}
+    for key, value in wanted.items():
+        if recursive and isinstance(value, dict) and isinstance(current.get(key), dict):
+            out[key] = merged(current[key], value)
+        else:
+            out[key] = value
+    return out
+
+
+def merged(current, wanted):
+    """Copy of the nested object with the wanted keys set, going down into nested objects."""
+    result = deepcopy(current)
+    for key, value in wanted.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = merged(result[key], value)
+        else:
+            result[key] = deepcopy(value)
+    return result
+
+
+def masked(value):
+    """True for a value the app shows as a mask, not as what is stored."""
+    return isinstance(value, str) and MASK.fullmatch(value) is not None
+
+
 def differing(current, wanted):
     """Keys of wanted whose value differs from the item's. A value the app hides is no difference."""
-    return {k: v for k, v in wanted.items() if current.get(k) != v and current.get(k) != HIDDEN}
+    return {k: v for k, v in wanted.items() if current.get(k) != v and not masked(current.get(k))}
 
 
 def shown(key, value):
@@ -199,6 +239,9 @@ def main():
             list_key=dict(type="str"),
             match_key=dict(type="str", default="name"),
             wanted=dict(type="dict", default={}),
+            create_url=dict(type="str"),
+            recursive=dict(type="bool", default=False),
+            partial_update=dict(type="bool", default=False),
             id_key=dict(type="str", default="id"),
             item_url=dict(type="str"),
             update_method=dict(type="str", default="PUT", choices=["PUT", "PATCH", "POST"]),
@@ -235,14 +278,15 @@ def main():
 
     if current is None:
         if not module.check_mode:
-            checked(request(module, "POST", p["url"], p["headers"], without(p["wanted"], p["read_only"])), "POST")
+            checked(request(module, "POST", p["create_url"] or p["url"], p["headers"], without(p["wanted"], p["read_only"])), "POST")
         module.exit_json(changed=True, diff=build_diff({}, p["wanted"]))
 
-    changed = differing(current, p["wanted"])
+    target = target_of(current, p["wanted"], p["recursive"])
+    changed = differing(current, target)
     if not changed:
         module.exit_json(changed=False, id=current.get(p["id_key"]))
     if not module.check_mode:
-        body = without(dict(deepcopy(current), **p["wanted"]), p["read_only"])
+        body = without(target if p["partial_update"] else dict(deepcopy(current), **target), p["read_only"])
         checked(request(module, p["update_method"], address(current), p["headers"], body), p["update_method"])
     module.exit_json(changed=True, id=current.get(p["id_key"]), diff=build_diff(current, changed))
 

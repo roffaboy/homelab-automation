@@ -134,6 +134,10 @@ class Module(unittest.TestCase):
         self.run_module(wanted={"enabled": True}, read_only=["apiKey"])
         self.assertNotIn("apiKey", App.writes[0][2])
 
+    def test_the_object_can_be_saved_at_another_address(self):
+        self.run_module(wanted={"enabled": True}, write_url=self.url + "/save")
+        self.assertEqual(App.writes[0][0], "POST")
+
     def test_the_write_method_can_be_chosen(self):
         self.run_module(wanted={"enabled": True}, write_method="PUT")
         self.assertEqual(App.writes[0][0], "PUT")
