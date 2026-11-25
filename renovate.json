@@ -1,49 +1,22 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    "schedule:weekly",
-    "group:all"
-  ],
+  "extends": ["config:recommended", "schedule:weekly", "group:all"],
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": [
-        "/^roles/[^/]+_stack/defaults/main\\.yml$/"
-      ],
-      "matchStrings": [
-        "\\s[a-z_]+: (?<depName>[a-z0-9.-]+(?:/[a-z0-9._-]+)+):(?<currentValue>[\\w.-]+)"
-      ],
+      "managerFilePatterns": ["/^roles/[^/]+_stack/defaults/main\\.yml$/"],
+      "matchStrings": ["\\s[a-z_]+: (?<depName>[a-z0-9.-]+(?:/[a-z0-9._-]+)+):(?<currentValue>[\\w.-]+)"],
       "datasourceTemplate": "docker"
-    },
-    {
-      "description": "The Holyfin version named in the example config and in Homepage's fonts",
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^config\\.example/jellyfin\\.yml$/",
-        "/^roles/monitoring_stack/templates/homepage-theme\\.css$/"
-      ],
-      "matchStrings": [
-        "roffaboy/holyfin@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
-      ],
-      "depNameTemplate": "roffaboy/holyfin",
-      "datasourceTemplate": "github-tags"
     }
   ],
   "packageRules": [
     {
-      "matchDepNames": [
-        "/linuxserver//"
-      ],
+      "matchDepNames": ["/linuxserver//"],
       "versioning": "regex:^v?(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?[^-]*-ls(?<build>\\d+)$"
     },
     {
       "description": "Patch updates merge by themselves once CI passes; autodeploy backs up and rolls back",
-      "matchUpdateTypes": [
-        "patch",
-        "pin",
-        "digest"
-      ],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
       "groupName": "patch updates",
       "automerge": true
     }
