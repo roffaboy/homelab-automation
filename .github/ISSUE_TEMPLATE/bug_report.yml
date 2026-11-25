@@ -1,0 +1,39 @@
+name: Something does not work
+description: The playbook fails, or an app is not set up as the README says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste anything from `vault.yml`, `.vault_pass`, API keys, tokens, passwords,
+        your public IP or the output of `ansible-vault view`.** Replace them with `xxx`.
+        Ansible's output hides most secrets (`no_log`), but check before you paste.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release, or the commit (`git log -1 --oneline`).
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Ubuntu version and hardware
+      placeholder: Ubuntu Server 26.04, mini PC with an Intel N100
+  - type: dropdown
+    id: install
+    attributes:
+      label: Which kind of run
+      options: [Fresh install, Existing install, Automatic deploy]
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect
+      description: The failing task and its message, from `ansible-playbook` (or `journalctl -u homelab-autodeploy`), without secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: The options you changed
+      description: Your `settings.yml`, without secrets.
