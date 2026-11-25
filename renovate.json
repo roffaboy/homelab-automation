@@ -19,6 +19,13 @@
   ],
   "packageRules": [
     {
+      "description": "ansible-core 2.22 needs Python 3.13, and Ubuntu 24.04 has 3.12; raise this when 24.04 is no longer supported",
+      "matchPackageNames": [
+        "ansible-core"
+      ],
+      "allowedVersions": "<2.22"
+    },
+    {
       "matchDepNames": [
         "/linuxserver//"
       ],

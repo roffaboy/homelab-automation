@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # First-time setup on the server: installs Ansible (and Tailscale, unless config/settings.yml
 # turns it off), links ~/homelab-config as config/ and encrypts vault.yml and wg0.conf if
-# they aren't yet. Asks nothing: fill in your configuration first (README). Safe to run again.
+# they aren't yet. With no configuration yet it first asks a few questions (init-config.sh);
+# with one already there it asks nothing. Safe to run again.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -9,8 +10,11 @@ config_dir="$HOME/homelab-config"
 fail() { echo "❌ $1" >&2; exit 1; }
 encrypted() { head -c 14 "$1" | grep -q '^\$ANSIBLE_VAULT'; }
 
-[ -e config ] || [ -d "$config_dir" ] ||
-  fail "No $config_dir. Copy config.example/ there and fill in vault.yml (README, Setup)."
+if [ ! -f config/vault.yml ] && [ ! -f "$config_dir/vault.yml" ]; then
+  [ -e config ] && fail "config/ has no vault.yml. Copy config.example/vault.yml there and fill it in."
+  echo "No configuration yet: a few questions first (copy config.example/ to $config_dir instead to do it by hand)."
+  ./init-config.sh
+fi
 [ -e config ] || ln -s "$config_dir" config
 [ -f config/vault.yml ] || fail "No config/vault.yml. Copy config.example/vault.yml and fill it in."
 
