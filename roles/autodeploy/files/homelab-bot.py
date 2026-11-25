@@ -9,32 +9,27 @@ commands under the message field. Started by homelab-bot.service; log: journalct
 """
 
 import html
-import json
 import os
 import re
 import shutil
 import subprocess
+import sys
 import time
-import urllib.request
 
-TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+sys.path.insert(0, os.environ.get("HOMELAB_LIB", "/usr/local/lib/homelab"))
+from homelab_common import State, Telegram  # noqa: E402
+
 CHAT_ID = int(os.environ["TELEGRAM_CHAT_ID"])
 REPO = os.environ["HOMELAB_REPO_DIR"]
-STATE = os.environ["HOMELAB_STATE_DIR"]  # the hold on automatic deploys, shared with homelab-autodeploy
 WEB = os.environ["HOMELAB_REPO_URL"]
+telegram = Telegram(os.environ["TELEGRAM_BOT_TOKEN"], CHAT_ID)
+state = State(os.environ["HOMELAB_STATE_DIR"], REPO)  # the notes shared with homelab-autodeploy
 DISKS = {"System": "/", "Media": os.environ["HOMELAB_DATA_DIR"]}
 DISK_WARN = 90  # percent used
 STACK_ICONS = {"Books": "📚", "Download": "⬇️", "Media": "🎬", "Monitoring": "📊", "Home": "🏠"}
 MAX_AGE = 60  # seconds
 POLL = 50     # seconds Telegram holds getUpdates open
 CHECK = 300   # seconds between checks of the apps
-
-
-def api(method, wait=10, **params):
-    request = urllib.request.Request(f"https://api.telegram.org/bot{TOKEN}/{method}",
-                                     json.dumps(params).encode(), {"Content-Type": "application/json"})
-    with urllib.request.urlopen(request, timeout=wait) as response:
-        return json.load(response)["result"]
 
 
 def run(*command):
@@ -54,27 +49,25 @@ def deploy():
 
 
 def hold():
-    with open(f"{STATE}/hold", "w") as file:
-        file.write("held from Telegram\n")
+    state.hold("held from Telegram")
     return "✋ Auto-deploys on hold: the server keeps what it runs now. /main puts main back."
 
 
 def main_again():
     if run("systemctl", "is-active", "homelab-autodeploy.service") == "activating":
         return "A deploy is already running; try /main again when it is done."
-    open(f"{STATE}/deploy-main", "w").close()  # homelab-autodeploy lifts the hold and deploys main
+    state.ask_for_main()  # homelab-autodeploy lifts the hold and deploys main
     subprocess.run(["systemctl", "start", "--no-block", "homelab-autodeploy.service"], check=True, timeout=30)
     return "▶️ Back to main: deploying it now, the deploy reports here. Auto-deploys follow main again."
 
 
 def held():
-    try:
-        with open(f"{STATE}/hold") as file:
-            what = file.read().strip()
-        since = time.strftime("%-d %b %H:%M", time.localtime(os.path.getmtime(f"{STATE}/hold")))
-    except FileNotFoundError:
+    on_hold = state.held()
+    if on_hold is None:
         return []
-    return ["", f"✋ Auto-deploys on hold since {since}: {html.escape(what)}. /main puts main back."]
+    why, since = on_hold
+    return ["", f"✋ Auto-deploys on hold since {time.strftime('%-d %b %H:%M', time.localtime(since))}: "
+                f"{html.escape(why)}. /main puts main back."]
 
 
 def containers():
@@ -102,8 +95,8 @@ def watch(down, alerted):
 
 
 def send(text):
-    api("sendMessage", chat_id=CHAT_ID, text=text, parse_mode="HTML",
-        link_preview_options={"is_disabled": True}, reply_markup=KEYBOARD)
+    telegram.api("sendMessage", chat_id=CHAT_ID, text=text, parse_mode="HTML",
+                 link_preview_options={"is_disabled": True}, reply_markup=KEYBOARD)
 
 
 def status():
@@ -130,19 +123,18 @@ def status():
     commit, title = run("git", "-C", REPO, "log", "-1", "--format=%H%n%s").split("\n", 1)
     # v1.1.0, or v1.1.0 + 3 since that release
     version = re.sub(r"-(\d+)-g[0-9a-f]+$", r" + \1", run("git", "-C", REPO, "describe", "--tags", "--always"))
-    failed = "\n⚠️ A newer commit failed, see /log" if os.path.exists(f"{REPO}/.failed-commit") else ""
+    failed = "\n⚠️ A newer commit failed, see /log" if state.failed() else ""
     return "\n".join(lines + [f"🚀 <b>Deployed</b>  {html.escape(version)} · {commit_link(commit)} {html.escape(title)}{failed}"]
                      + held())
 
 
 def log():
-    try:
-        with open(f"{REPO}/.last-failure") as file:
-            when, commit, *what = file.read().strip().split("\n")  # written by homelab-autodeploy
-    except FileNotFoundError:
+    last = state.last_failure()  # written by homelab-autodeploy
+    if last is None:
         return "No failed deploy recorded."
-    fixed = "" if os.path.exists(f"{REPO}/.failed-commit") else "\n\nA later deploy succeeded."
-    return (f"❌ Last failed deploy: {when}, {commit_link(commit)}\n{html.escape(chr(10).join(what))}{fixed}"
+    when, commit, what = last
+    fixed = "" if state.failed() else "\n\nA later deploy succeeded."
+    return (f"❌ Last failed deploy: {when}, {commit_link(commit)}\n{html.escape(what)}{fixed}"
             "\n\nFull log: journalctl -u homelab-autodeploy")
 
 
@@ -189,7 +181,7 @@ def main():
             except Exception as error:  # Telegram or Docker unreachable: try again at the next check
                 print(f"Check failed: {type(error).__name__}", flush=True)
         try:
-            updates = api("getUpdates", wait=POLL + 10, offset=offset, timeout=POLL, allowed_updates=["message"])
+            updates = telegram.api("getUpdates", wait=POLL + 10, offset=offset, timeout=POLL, allowed_updates=["message"])
         except Exception as error:  # a network hiccup: wait and poll again
             print(f"Telegram unreachable: {type(error).__name__}", flush=True)  # not the error itself: its URL holds the token
             time.sleep(10)
