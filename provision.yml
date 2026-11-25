@@ -153,8 +153,9 @@
 
   # After every stack is up, so what runs is in use: the images of earlier versions go.
   post_tasks:
-    - name: Remove the Docker images that no container uses
+    - name: Remove the Docker images and volumes that no container uses
       community.docker.docker_prune:
         images: true
         images_filters:
           dangling: false
+        volumes: true   # anonymous volumes of containers that were replaced; the apps' data is in folders
