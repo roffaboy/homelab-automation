@@ -7,21 +7,29 @@ color: slate
 headerStyle: boxedWidgets
 # A dot per app: green when its web UI answers (siteMonitor in services.yaml).
 statusStyle: dot
-# A tab per group, every tile the same size.
+# A tab per kind of app, a column per group in it, every tile the same size.
 useEqualHeights: true
 layout:
-  Media:
+  # A column per group, the groups of a tab side by side (the tab and its groups: app_config,
+  # homepage-services.yaml).
+  Watch:
     tab: Media
-    style: row
-    columns: 4
-  Downloads:
+  Request:
+    tab: Media
+  Read:
+    tab: Media
+  Library:
     tab: Downloads
-    style: row
-    columns: 4
-  System:
+  Sources:
+    tab: Downloads
+  Cleanup:
+    tab: Downloads
+  Monitoring:
     tab: System
-    style: row
-    columns: 4
+  Storage:
+    tab: System
+  Releases:
+    tab: System
   # The accounts, by what they are for (app_config, homepage.yml), a column each.
   Network:
     tab: Accounts

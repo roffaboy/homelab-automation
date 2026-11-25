@@ -3,7 +3,8 @@
 # Links go to the server's LAN address; widgets and status dots reach the apps on the Docker
 # network.
 {% macro href(app) %}http://{{ homelab_lan_ip }}:{{ homelab_ports[app] }}{% endmacro %}
-- Media:
+# Tiles by what they are for, grouped under tabs in settings.yaml (monitoring_stack).
+- Watch:
     - Jellyfin:
         icon: jellyfin.png
         href: {{ href('jellyfin') }}
@@ -15,6 +16,8 @@
           key: {{ _app_config_jellyfin_api_key }}
           enableBlocks: true
           enableNowPlaying: true
+
+- Request:
     - Seerr:
         icon: seerr.png
         href: {{ href('seerr') }}
@@ -30,6 +33,8 @@
         siteMonitor: http://suggestarr:5000
 {% endif %}
 {% if homelab_books | bool %}
+
+- Read:
     - Calibre-Web:
         icon: calibre-web.png
         href: {{ href('calibre') }}
@@ -41,7 +46,7 @@
           password: {{ homelab_password | to_json }}
 {% endif %}
 
-- Downloads:
+- Library:
     - Radarr:
         icon: radarr.png
         href: {{ href('radarr') }}
@@ -70,6 +75,8 @@
           url: http://bazarr:6767
           key: {{ _app_config_bazarr_key }}
 {% endif %}
+
+- Sources:
     - Prowlarr:
         icon: prowlarr.png
         href: {{ href('prowlarr') }}
@@ -87,6 +94,8 @@
           url: http://gluetun:{{ homelab_ports.qbittorrent }}
           username: {{ homelab_username | to_json }}
           password: {{ homelab_password | to_json }}
+
+- Cleanup:
     - Cleanuparr:
         icon: cleanuparr.png
         href: {{ href('cleanuparr') }}
@@ -100,10 +109,9 @@
           url: http://maintainerr:6246
           fields: [reclaimable, itemsHandled]
 
-{% if homelab_monitoring | bool or (app_config_github_repo and app_config_github_token) %}
-- System:
-{% endif %}
 {% if homelab_monitoring | bool %}
+
+- Monitoring:
     - Grafana:
         icon: grafana.png
         href: {{ href('grafana') }}
@@ -121,6 +129,8 @@
           type: prometheus
           url: http://prometheus:9090
 {% if homelab_backup_remote %}
+
+- Storage:
     # Sizes measured after each nightly backup (roles/backup); free space from node-exporter.
     - Storage:
         icon: mdi-harddisk
@@ -168,6 +178,8 @@
 {% endif %}
 {% endif %}
 {% if app_config_github_repo and app_config_github_token %}
+
+- Releases:
     # The latest release, from GitHub's API with a read-only token (app_config_github_token).
     # GitHub rejects requests without a User-Agent, and Homepage sends none by itself.
     - GitHub:
