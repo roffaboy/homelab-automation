@@ -113,7 +113,7 @@
   notify: Restart homepage
   tags: homepage
 
-# The look (homelab_homepage_custom_theme) and the two rules that shape the tiles.
+# Your own look, from config/homepage.css when it exists.
 - name: Deploy Homepage's custom CSS
   ansible.builtin.template:
     src: homepage-custom.css.j2

@@ -6,4 +6,4 @@ dashboard and alerts, and [Homepage](https://gethomepage.dev), the start page wi
 - **Runs:** with `homelab_monitoring` or `homelab_homepage` (both on by default); each part
   only when its switch is on. Tag: `monitoring`.
 - **Settings:** `defaults/main.yml`: the image versions and how long Prometheus keeps data.
-  Homepage's look (flat, square, Geist, one red accent; dark or light with `homelab_homepage_theme`, off with `homelab_homepage_custom_theme: false`, which leaves Homepage's own look): `templates/homepage-theme.css`; its apps and widgets come from `app_config`.
+  Optional own look for Homepage: `config/homepage.css` (CSS; dark or light with `homelab_homepage_theme`); its apps and widgets come from `app_config`.

@@ -48,6 +48,8 @@ config_old=$(git -C config rev-parse HEAD 2>/dev/null)
 config_new=$config_old
 if [ -n "$config_old" ] && env -u GIT_SSH_COMMAND git -C config fetch --quiet; then
   config_new=$(git -C config rev-parse '@{upstream}' 2>/dev/null || echo "$config_old")
+  # A commit you have not pushed yet is ahead of GitHub, not new: do not deploy for it every time.
+  git -C config merge-base --is-ancestor "$config_new" "$config_old" && config_new=$config_old
 fi
 if ! $force; then
   [ "$new" = "$old" ] && [ "$config_new" = "$config_old" ] && exit 0

@@ -1,6 +1,6 @@
 /* {{ ansible_managed }} */
 /* https://gethomepage.dev/configs/custom-css-js/ */
-{% if homelab_homepage_custom_theme | bool %}
+{% if (homelab_config_dir ~ '/homepage.css') is file %}
 
-{% include 'homepage-theme.css' %}
+{{ lookup('ansible.builtin.file', homelab_config_dir ~ '/homepage.css') }}
 {% endif %}
