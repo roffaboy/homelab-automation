@@ -9,4 +9,11 @@ Type=oneshot
 User={{ homelab_user }}
 EnvironmentFile=/etc/homelab-autodeploy.env
 Environment=HOMELAB_AUTODEPLOY=1
-ExecStart=/usr/local/bin/homelab-autodeploy
+Environment=HOMELAB_REPO_DIR={{ autodeploy_dir }}
+Environment=HOMELAB_STATE_DIR={{ homelab_state_dir }}
+Environment=HOMELAB_REPO_URL={{ autodeploy_web_url }}
+Environment=HOMELAB_SSH_KEY={{ autodeploy_key }}
+Environment=HOMELAB_LOCK={{ homelab_lock }}
+Environment="HOMELAB_STACK_DIRS={{ homelab_stack_dirs.values() | join(' ') }}"
+Environment=HOMELAB_DATA_DIR={{ homelab_data_dir }}
+ExecStart=/usr/bin/python3 /usr/local/lib/homelab/homelab_deploy.py

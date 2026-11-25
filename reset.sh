@@ -20,7 +20,7 @@ read -rp "Type 'reset' to continue: " answer
 
 echo "Stopping the automatic deploys (the backups in /backup stay)..."
 sudo systemctl disable --now homelab-autodeploy.timer 2>/dev/null || true
-sudo rm -f /etc/systemd/system/homelab-autodeploy.{service,timer} /usr/local/bin/homelab-autodeploy \
+sudo rm -f /etc/systemd/system/homelab-autodeploy.{service,timer} /usr/local/bin/homelab-autodeploy /usr/local/lib/homelab/homelab_common.py /usr/local/lib/homelab/homelab_deploy.py \
   /etc/homelab-autodeploy.env
 sudo systemctl daemon-reload
 
