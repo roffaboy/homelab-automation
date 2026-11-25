@@ -1,0 +1,55 @@
+---
+# A fresh Jellyfin: the setup wizard, answered for the admin. Run by jellyfin.yml when the wizard
+# has not been completed.
+
+- name: Jellyfin | Wizard - language and metadata
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Startup/Configuration"
+    method: POST
+    body_format: json
+    body:
+      UICulture: en-US
+      MetadataCountryCode: "{{ app_config_jellyfin_country }}"
+      PreferredMetadataLanguage: "{{ app_config_jellyfin_language }}"
+    status_code:
+      - 200
+      - 204
+
+# Jellyfin creates the first user on this GET; the POST below sets its login.
+- name: Jellyfin | Wizard - create the admin
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Startup/User"
+
+- name: Jellyfin | Wizard - set the admin login
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Startup/User"
+    method: POST
+    body_format: json
+    body:
+      Name: "{{ homelab_username }}"
+      Password: "{{ homelab_password }}"
+    status_code:
+      - 200
+      - 204
+  no_log: true
+
+- name: Jellyfin | Wizard - remote access
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Startup/RemoteAccess"
+    method: POST
+    body_format: json
+    body:
+      EnableRemoteAccess: true
+      EnableAutomaticPortMapping: false
+    status_code:
+      - 200
+      - 204
+
+- name: Jellyfin | Wizard - finish
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Startup/Complete"
+    method: POST
+    status_code:
+      - 200
+      - 204
+  changed_when: true

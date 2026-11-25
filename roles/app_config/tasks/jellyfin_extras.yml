@@ -1,0 +1,123 @@
+---
+# An API key for Radarr and Sonarr, the custom CSS, the plugin repositories and the plugins. Run as
+# part of jellyfin.yml, inside its block (module_defaults supply the Authorization header and JSON
+# bodies).
+
+- name: Jellyfin | Read the API keys
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Auth/Keys"
+  register: _app_config_jf_existing_keys
+  check_mode: false
+  no_log: true
+
+- name: Jellyfin | Create the API key for Radarr and Sonarr
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Auth/Keys?app=servarr"
+    method: POST
+    status_code:
+      - 200
+      - 204
+  when: "'servarr' not in _app_config_jf_existing_keys.json.Items | map(attribute='AppName')"
+  changed_when: true
+
+- name: Jellyfin | Read the API key
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Auth/Keys"
+  register: _app_config_jf_keys
+  check_mode: false
+  no_log: true
+
+- name: Jellyfin | Remember the API key
+  ansible.builtin.set_fact:
+    _app_config_jellyfin_api_key: "{{ (_app_config_jf_keys.json.Items | selectattr('AppName', 'equalto', 'servarr') | first).AccessToken }}"
+  when: "'servarr' in _app_config_jf_keys.json.Items | map(attribute='AppName')"
+  no_log: true
+
+- name: Jellyfin | Read the branding
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/System/Configuration/branding"
+  register: _app_config_jf_branding
+  check_mode: false
+  when: app_config_jellyfin_css | length > 0
+
+- name: Jellyfin | Custom CSS
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/System/Configuration/branding"
+    method: POST
+    body: "{{ _app_config_jf_branding.json | combine({'CustomCss': app_config_jellyfin_css | trim}) }}"
+    status_code: 204
+  when:
+    - app_config_jellyfin_css | length > 0
+    - _app_config_jf_branding.json.CustomCss | default('') != app_config_jellyfin_css | trim
+  changed_when: true
+
+- name: Jellyfin | Read the plugin repositories
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Repositories"
+  register: _app_config_jf_repos
+  check_mode: false
+
+# A save replaces the whole list, so the repositories already there are sent along.
+- name: Jellyfin | Plugin repositories
+  vars:
+    _missing: >-
+      {{ app_config_jellyfin_repositories | rejectattr('Url', 'in',
+         _app_config_jf_repos.json | map(attribute='Url')) | list }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Repositories"
+    method: POST
+    body: "{{ _app_config_jf_repos.json + _missing }}"
+    status_code: 204
+  when: _missing | length > 0
+  changed_when: true
+
+# Plugins (app_config_jellyfin_plugins), installed when missing.
+- name: Jellyfin | Read the plugins
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Plugins"
+  register: _app_config_jf_plugins
+  check_mode: false
+  when: app_config_jellyfin_plugins | length > 0
+
+- name: Jellyfin | Install missing plugins
+  vars:
+    _missing: "{{ app_config_jellyfin_plugins | difference(_app_config_jf_plugins.json | map(attribute='Name')) }}"
+  when:
+    - app_config_jellyfin_plugins | length > 0
+    - _missing | length > 0
+  block:
+    - name: Jellyfin | Download the plugins
+      ansible.builtin.uri:
+        url: "{{ app_config_urls.jellyfin }}/Packages/Installed/{{ item | urlencode }}"
+        method: POST
+        status_code: 204
+      loop: "{{ _missing }}"
+      changed_when: true
+
+    # Jellyfin downloads them in the background and loads them only when it starts.
+    - name: Jellyfin | Wait for the downloads
+      ansible.builtin.find:
+        paths: "{{ homelab_stack_dirs.media }}/appdata/jellyfin/data/plugins"
+        patterns: "{{ _missing | map('regex_replace', '$', '_*') | list }}"
+        file_type: directory
+      register: _app_config_jf_plugin_dirs
+      until: _app_config_jf_plugin_dirs.matched >= _missing | length
+      retries: 30
+      delay: 2
+      when: not ansible_check_mode
+
+    - name: Jellyfin | Restart for the new plugins
+      community.docker.docker_compose_v2:
+        project_src: "{{ homelab_stack_dirs.media }}"
+        services:
+          - jellyfin
+        state: restarted
+
+    - name: Jellyfin | Wait for the restart
+      ansible.builtin.uri:
+        url: "{{ app_config_urls.jellyfin }}/System/Info/Public"
+      register: _app_config_jf_up
+      until: _app_config_jf_up.status == 200
+      retries: 60
+      delay: 2
+      when: not ansible_check_mode

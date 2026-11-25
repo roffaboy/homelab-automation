@@ -1,0 +1,109 @@
+---
+# The users: your shared login's neighbours (more users when you list them), the profiles on the
+# login screen, profile pictures, and each user's home screen. Run as part of jellyfin.yml, inside
+# its block (module_defaults supply the Authorization header and JSON bodies).
+
+- name: Jellyfin | Read the users
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Users"
+  register: _app_config_jf_users
+  check_mode: false
+
+# Not admins; they see every library and keep their own watch history.
+- name: Jellyfin | Create missing users
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Users/New"
+    method: POST
+    body:
+      Name: "{{ item.name }}"
+      Password: "{{ item.password }}"
+  loop: "{{ app_config_jellyfin_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.name not in _app_config_jf_users.json | map(attribute='Name')
+  register: _app_config_jf_new_users
+  changed_when: true
+  no_log: true
+
+# A tile on the login screen, to pick a profile like on Netflix (a password is still asked).
+- name: Jellyfin | Profiles on the login screen
+  vars:
+    _user: >-
+      {{ (_app_config_jf_users.json
+          + (_app_config_jf_new_users.results | selectattr('json', 'defined') | map(attribute='json')))
+         | selectattr('Name', 'equalto', item) | first | default({'Policy': {'IsHidden': false}}) }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Users/{{ _user.Id }}/Policy"
+    method: POST
+    body: "{{ _user.Policy | combine({'IsHidden': false}) }}"
+    status_code: 204
+  loop: "{{ [homelab_username] + app_config_jellyfin_users | map(attribute='name') }}"
+  when:
+    - app_config_jellyfin_profile_tiles | bool
+    - _user.Policy.IsHidden
+  changed_when: true
+
+- name: Jellyfin | Read the profile pictures
+  ansible.builtin.slurp:
+    src: "{{ homelab_config_dir }}/{{ item.value }}"
+  loop: "{{ app_config_jellyfin_images | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: _app_config_jf_images
+
+# Only for users without one, so a picture you change in Jellyfin stays.
+- name: Jellyfin | Profile pictures
+  vars:
+    _user: >-
+      {{ (_app_config_jf_users.json
+          + (_app_config_jf_new_users.results | selectattr('json', 'defined') | map(attribute='json')))
+         | selectattr('Name', 'equalto', item.item.key) | first | default({'PrimaryImageTag': 'none'}) }}
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/Users/{{ _user.Id }}/Images/Primary"
+    method: POST
+    # A headers dict replaces the block's default, so the Authorization header is named here too.
+    headers:
+      Authorization: "{{ _auth }}"
+      Content-Type: "image/{{ 'png' if item.item.value is search('\\.png$') else 'jpeg' }}"
+    body_format: raw
+    body: "{{ item.content }}"
+    status_code: 204
+  loop: "{{ _app_config_jf_images.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  when: _user.PrimaryImageTag is not defined
+  changed_when: true
+
+# The web app keeps each user's home screen and Dashboard theme as its display preferences
+# ("emby"). The theme of the app itself is kept by each browser; homelab_jellyfin_theme only
+# sets what a browser starts with (media_stack).
+- name: Jellyfin | Read the home screens
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/DisplayPreferences/usersettings?userId={{ item.Id }}&client=emby"
+  loop: >-
+    {{ _app_config_jf_users.json
+       + (_app_config_jf_new_users.results | selectattr('json', 'defined') | map(attribute='json')) }}
+  loop_control:
+    label: "{{ item.Name }}"
+  register: _app_config_jf_home
+  check_mode: false
+  when: app_config_jellyfin_home | length > 0 or homelab_jellyfin_theme | length > 0
+
+- name: Jellyfin | Home screen and Dashboard theme
+  vars:
+    _rows: >-
+      {{ dict(range(10) | map('string') | map('regex_replace', '^', 'homesection')
+              | zip(app_config_jellyfin_home + ['none'] * 10))
+         if app_config_jellyfin_home | length > 0 else {} }}
+    _theme: "{{ {'dashboardTheme': homelab_jellyfin_theme} if homelab_jellyfin_theme | length > 0 else {} }}"
+    _prefs: "{{ item.json | combine({'CustomPrefs': _rows | combine(_theme)}, recursive=true) }}"
+  ansible.builtin.uri:
+    url: "{{ app_config_urls.jellyfin }}/DisplayPreferences/usersettings?userId={{ item.item.Id }}&client=emby"
+    method: POST
+    body: "{{ _prefs }}"
+    status_code: 204
+  loop: "{{ _app_config_jf_home.results | rejectattr('skipped', 'defined') }}"
+  loop_control:
+    label: "{{ item.item.Name }}"
+  when: _prefs != item.json
+  changed_when: true
