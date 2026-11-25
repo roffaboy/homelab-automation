@@ -48,13 +48,14 @@
   notify: Restart grafana
   when: homelab_monitoring | bool
 
-# The Homelab dashboard (also Grafana's home page). Grafana picks up changes by itself.
-- name: Provision the Homelab dashboard
+# Your dashboards: the .json files in config/grafana-dashboards/. Grafana picks up changes by
+# itself. home.json there is also Grafana's home page. Without the folder Grafana has none.
+- name: Provision your dashboards
   ansible.builtin.copy:
-    src: homelab-overview.json
-    dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/dashboards/homelab-overview.json"
+    src: "{{ homelab_config_dir }}/grafana-dashboards/"
+    dest: "{{ homelab_stack_dirs.monitoring }}/appdata/grafana/provisioning/dashboards/"
     mode: "0644"
-  when: homelab_monitoring | bool
+  when: homelab_monitoring | bool and (homelab_config_dir ~ '/grafana-dashboards') is directory
 
 # Alerts go to Telegram; without a bot in the vault there are none.
 - name: Provision the alerts in Grafana

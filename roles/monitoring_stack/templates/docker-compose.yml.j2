@@ -44,7 +44,9 @@ services:
       GF_SERVER_ROOT_URL: http://{{ homelab_lan_ip }}:{{ homelab_ports.grafana }}/
       # No extra plugins (about 0.5 GB: CloudWatch, Loki, ...); Prometheus is built in.
       GF_PLUGINS_PREINSTALL_DISABLED: "true"
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/homelab-overview.json
+{% if (homelab_config_dir ~ '/grafana-dashboards/home.json') is file %}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/home.json
+{% endif %}
       TZ: {{ homelab_tz }}
     volumes:
       - {{ homelab_stack_dirs.monitoring }}/appdata/grafana/data:/var/lib/grafana
