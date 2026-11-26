@@ -9,13 +9,11 @@
     fail_msg: SuggestArr needs vault_tmdb_api_key in config/vault.yml (a free key, README).
     quiet: true
 
-- name: SuggestArr | Wait for it to start
+# The media stack is started with wait: true and SuggestArr has a health check, so it is up.
+- name: SuggestArr | Read whether your login is set
   ansible.builtin.uri:
     url: "{{ app_config_urls.suggestarr }}/api/auth/status"
   register: _app_config_suggestarr_status
-  until: _app_config_suggestarr_status.status == 200
-  retries: 30
-  delay: 2
   check_mode: false
 
 - name: SuggestArr | Your login

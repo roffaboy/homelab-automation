@@ -97,18 +97,12 @@
       delay: 2
       when: not ansible_check_mode
 
+    # A new container, not state: restarted: only this way the module waits for the health check.
     - name: Jellyfin | Restart for the new plugins
       community.docker.docker_compose_v2:
         project_src: "{{ homelab_stack_dirs.media }}"
         services:
           - jellyfin
-        state: restarted
-
-    - name: Jellyfin | Wait for the restart
-      ansible.builtin.uri:
-        url: "{{ app_config_urls.jellyfin }}/System/Info/Public"
-      register: _app_config_jf_up
-      until: _app_config_jf_up.status == 200
-      retries: 60
-      delay: 2
-      when: not ansible_check_mode
+        recreate: always
+        wait: true
+        wait_timeout: 300

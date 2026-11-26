@@ -157,6 +157,16 @@ services:
       - {{ homelab_stack_dirs.media }}/appdata/suggestarr:/app/config/config_files
     ports:
       - "{{ homelab_publish_ip }}:{{ homelab_ports.suggestarr }}:5000"
+    healthcheck:
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request as u; u.urlopen('http://localhost:5000/api/auth/status')"
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
 {% endif %}
