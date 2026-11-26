@@ -1,19 +1,42 @@
 #!/usr/bin/env bash
-# First-time setup on the server: installs Ansible (and Tailscale, unless config/settings.yml
-# turns it off), links ~/homelab-config as config/ and encrypts vault.yml and wg0.conf if
-# they aren't yet. With no configuration yet it first asks a few questions (init-config.sh);
-# with one already there it asks nothing. Safe to run again.
+# Everything in one go, on the server: checks the server, asks a few questions when there is no
+# configuration yet (init-config.sh), installs Ansible (and Tailscale, unless config/settings.yml
+# turns it off), links ~/homelab-config as config/, encrypts vault.yml and wg0.conf, and runs the
+# playbook. Safe to run again: it asks nothing once the configuration is there, and the playbook
+# only changes what differs.
+#
+#   ./setup.sh                  set up and install
+#   ./setup.sh --no-provision   set up, but do not run the playbook yet
+#   ./setup.sh -e key=value     anything else goes to ansible-playbook (--tags jellyfin, --check, ...)
 set -euo pipefail
 cd "$(dirname "$0")"
 
-config_dir="$HOME/homelab-config"
+config_dir="${CONFIG_DIR:-$HOME/homelab-config}"
+provision=true
+playbook_args=()
+for arg in "$@"; do
+  if [ "$arg" = --no-provision ]; then provision=false; else playbook_args+=("$arg"); fi
+done
+
 fail() { echo "❌ $1" >&2; exit 1; }
 encrypted() { head -c 14 "$1" | grep -q '^\$ANSIBLE_VAULT'; }
+
+echo "== Checking the server"
+[ "$(id -u)" -ne 0 ] || fail "Run this as your own user, not as root: it uses sudo where it needs to (the apps' folders belong to your user)."
+. /etc/os-release
+case "${ID:-}:${VERSION_ID:-}" in
+  ubuntu:24.04|ubuntu:26.04) ;;
+  *) echo "⚠️  This is ${PRETTY_NAME:-an unknown system}; it is tested on Ubuntu Server 24.04 and 26.04." ;;
+esac
+curl -fsS --max-time 15 -o /dev/null https://github.com || fail "No internet connection (github.com can't be reached)."
+# The password is asked once, here; the playbook runs for a while and needs sudo throughout.
+sudo -n true 2>/dev/null || sudo -v || fail "Your user needs sudo."
+( while kill -0 $$ 2>/dev/null; do sudo -n true; sleep 50; done ) >/dev/null 2>&1 </dev/null &
 
 if [ ! -f config/vault.yml ] && [ ! -f "$config_dir/vault.yml" ]; then
   [ -e config ] && fail "config/ has no vault.yml. Copy config.example/vault.yml there and fill it in."
   echo "No configuration yet: a few questions first (copy config.example/ to $config_dir instead to do it by hand)."
-  ./init-config.sh
+  CONFIG_DIR="$config_dir" ./init-config.sh
 fi
 [ -e config ] || ln -s "$config_dir" config
 [ -f config/vault.yml ] || fail "No config/vault.yml. Copy config.example/vault.yml and fill it in."
@@ -37,12 +60,33 @@ for file in config/vault.yml config/wg0.conf; do
   fi
 done
 
-if ! grep -qs 'homelab_tailscale: *false' config/*.yml && ! command -v tailscale >/dev/null; then
-  echo "== Tailscale"
-  curl -fsSL https://tailscale.com/install.sh | sh
-  sudo tailscale up
-  echo "After the playbook, approve the server's route in the Tailscale admin console (README, Away from home)."
+tailscale_wanted=false
+if ! grep -qs 'homelab_tailscale: *false' config/*.yml; then
+  tailscale_wanted=true
+  if ! command -v tailscale >/dev/null; then
+    echo "== Tailscale"
+    curl -fsSL https://tailscale.com/install.sh | sh
+    sudo tailscale up
+  fi
 fi
 
+if [ "$provision" = false ]; then
+  echo
+  echo "✅ Ready. Install everything: ./setup.sh   (or: .venv/bin/ansible-playbook provision.yml)"
+  exit 0
+fi
+
+echo "== Installing the apps (10 to 20 minutes the first time)"
+.venv/bin/ansible-playbook provision.yml "${playbook_args[@]}" ||
+  fail "The playbook stopped. Fix what it says above and run ./setup.sh again: everything done so far is kept."
+
+ip=$(hostname -I | awk '{print $1}')
 echo
-echo "✅ Ready. Install everything: .venv/bin/ansible-playbook provision.yml"
+echo "✅ Done. Open Seerr at http://$ip:5055 to request a movie, and Jellyfin at http://$ip:8096 to watch."
+echo "   Log in with the user name and password you gave."
+echo "   Still yours to do:"
+echo "   - Keep the vault password (.vault_pass) and vault.yml outside this server, or the backups cannot be opened."
+if [ "$tailscale_wanted" = true ]; then
+  echo "   - Away from home: approve the server's route in the Tailscale admin console (README, Away from home)."
+fi
+[ -f config/indexers.yml ] || echo "   - Add the sites Prowlarr searches (config/indexers.yml, or in Prowlarr itself)."

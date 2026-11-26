@@ -26,39 +26,43 @@ differ from this repo are changed. One username and password is used for every s
 No sites to download from are included: you add the indexers you choose yourself. Only
 download what you are allowed to where you live.
 
-## Requirements
+## Before you start
 
-- One server (a mini PC will do) with Ubuntu Server 24.04 or 26.04 (both LTS; CI installs on both), and a user
-  with `sudo`. A fixed address in your router (a DHCP reservation) and internet access.
-- For hardware transcoding, an Intel GPU (`/dev/dri`, VA-API). Without one Jellyfin transcodes in
-  software; the playbook notices.
-- Optional: a Tailscale account (to reach the apps away from home), a WireGuard config from your
-  VPN provider (for downloads), a Telegram bot, a cloud drive for offsite backups.
+You need a server with Ubuntu Server 24.04 or 26.04, a user with `sudo`, and a fixed address for it in
+your router (a DHCP reservation). For hardware transcoding an Intel GPU helps; without one Jellyfin
+transcodes in software.
 
-## Quick start
+The rest depends on what you want. Have it ready before you start; the script asks for the basics and
+reads the rest from `~/homelab-config`:
 
-On that server:
+| You want | You need | Goes in |
+|---|---|---|
+| Downloads through a VPN | A WireGuard config from your VPN provider | `wg0.conf` |
+| The apps away from home | A [Tailscale](https://tailscale.com) account | asked by the script |
+| Telegram messages and bot | A Telegram bot token and your chat id | `vault.yml` |
+| Suggestions (SuggestArr) | A free [TMDb](https://www.themoviedb.org/settings/api) API key | asked by the script |
+| More subtitles | Accounts at [OpenSubtitles](https://www.opensubtitles.com), [SubDL](https://subdl.com), [Subsource](https://subsource.net) | `vault.yml` |
+| Offsite backup | A cloud drive that rclone supports, e.g. Google Drive ([steps](#offsite-backup)) | `vault.yml`, `settings.yml` |
+| Automatic deploys | Your own fork of this repo on GitHub | `vault.yml` |
+| Search sites in Prowlarr | The indexers you choose | `indexers.yml` |
+
+Every option is explained in [`config.example/`](config.example). Without a file, that part isn't set up.
+
+## Install
 
 ```bash
 sudo apt install -y git
 git clone https://github.com/roffaboy/homelab-automation.git && cd homelab-automation
-./setup.sh                                  # a few questions, then it writes ~/homelab-config
-.venv/bin/ansible-playbook provision.yml
+./setup.sh
 ```
 
-With no configuration yet, `setup.sh` first asks for the login for the apps, an email and which
-optional apps you want, and writes `~/homelab-config/vault.yml` and `settings.yml` (it makes the
-backup password for you). Prefer to write them yourself? Copy `config.example/*` to `~/homelab-config/`
-and fill in `vault.yml` and `settings.yml` first; `setup.sh` then asks nothing.
+That is all. The script checks the server, asks for the login for the apps, an email and which
+optional apps you want (it writes `~/homelab-config` for you), logs in to Tailscale, installs
+everything and ends with what is left for you. It takes 10 to 20 minutes. Run it again whenever you
+like: it asks nothing more and only changes what differs. Prefer to write the configuration yourself?
+Copy `config.example/*` to `~/homelab-config/` and fill it in first.
 
-Optional before `./setup.sh`: the sites Prowlarr searches in `~/homelab-config/indexers.yml`,
-and your VPN's WireGuard config as `~/homelab-config/wg0.conf` (see [Your configuration](#your-configuration)).
-
-`setup.sh` installs Ansible and Tailscale (unless `homelab_tailscale: false`),
-links `~/homelab-config` as `config/` and encrypts your secrets with a new vault password,
-which it shows once (save it in your password manager). The playbook then installs everything.
-Both can be run again. Give the server a fixed address in your router first (a DHCP
-reservation). Afterwards the apps are at `http://<server-ip>:<port>`:
+The apps are then at `http://<server-ip>:<port>`:
 
 | App | Port |
 |---|---|
@@ -69,10 +73,8 @@ reservation). Afterwards the apps are at `http://<server-ip>:<port>`:
 | Calibre-Web (ebooks) | `:8083` |
 | Radarr `:7878`, Sonarr `:8989`, Bazarr `:6767`, Prowlarr `:9696`, qBittorrent `:8080`, Cleanuparr `:11011`, Maintainerr `:6246`, Grafana `:3000` | |
 
-With Tailscale the same addresses work away from home: approve the server's route once (see
-[Away from home](#away-from-home)).
-
-Log in with the username and password from your `vault.yml`.
+Log in with the username and password you gave. With Tailscale, approve the server's route once
+([Away from home](#away-from-home)).
 
 ## Your configuration
 
@@ -144,13 +146,12 @@ you make in SuggestArr.
 ## Usage
 
 ```bash
-. .venv/bin/activate
-ansible-playbook provision.yml
+./setup.sh
 ```
 
-- Run part of it with `--tags docker|download|media|books|monitoring|apps|tailscale`, or one app with
+- Run part of it with `./setup.sh --tags docker|download|media|books|monitoring|apps|tailscale`, or one app with
   `--tags qbittorrent|jellyfin|arrs|prowlarr|cleanuparr|recyclarr|seerr|maintainerr|bazarr|suggestarr|calibre|homepage`.
-- Preview with `--check --diff` (once Docker is installed).
+- Preview with `./setup.sh --check --diff` (once Docker is installed).
 - `./reset.sh` wipes the server back to Ubuntu + Tailscale (`--keep-media` keeps the library).
 - Family members only need a Jellyfin user, with their own watch history: `vault_jellyfin_users`
   in the vault, or make one in Jellyfin (Dashboard, Users). They log in with it on the TV.
@@ -273,7 +274,7 @@ The linked folders have a short README of their own.
 |---|---|
 | `provision.yml` | The playbook: the roles in order |
 | `inventory/group_vars/homelab/main.yml` | Settings shared by several roles |
-| `setup.sh` | First-time setup: Ansible, Tailscale, links your configuration and encrypts its secrets |
+| `setup.sh` | Everything in one go: checks the server, Ansible, Tailscale, your configuration and its secrets, then the playbook |
 | `config/` | Your configuration (not in this repo, see above); examples in [`config.example/`](config.example) |
 | `roles/*/defaults/main.yml` | Settings of one role you may change |
 | `roles/*/vars/main.yml` | Fixed values of one role |
