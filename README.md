@@ -56,11 +56,9 @@ git clone https://github.com/roffaboy/homelab-automation.git && cd homelab-autom
 ./setup.sh
 ```
 
-That is all. The script checks the server, asks for the login for the apps, an email and which
-optional apps you want (it writes `~/homelab-config` for you), logs in to Tailscale, installs
-everything and ends with what is left for you. It takes 10 to 20 minutes. Run it again whenever you
-like: it asks nothing more and only changes what differs. Prefer to write the configuration yourself?
-Copy `config.example/*` to `~/homelab-config/` and fill it in first.
+The script asks for the login for the apps, an email and which optional apps you want, then installs
+everything. Run it again whenever you like. To write the configuration yourself, copy
+`config.example/*` to `~/homelab-config/` first.
 
 The apps are then at `http://<server-ip>:<port>`:
 

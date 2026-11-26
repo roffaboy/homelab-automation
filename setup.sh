@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
-# Everything in one go, on the server: checks the server, asks a few questions when there is no
-# configuration yet (init-config.sh), installs Ansible (and Tailscale, unless config/settings.yml
-# turns it off), links ~/homelab-config as config/, encrypts vault.yml and wg0.conf, and runs the
-# playbook. Safe to run again: it asks nothing once the configuration is there, and the playbook
-# only changes what differs.
+# Sets up the server and installs everything: checks, questions (init-config.sh), Ansible,
+# Tailscale, ~/homelab-config as config/, encrypted secrets, then the playbook. Safe to run again.
 #
 #   ./setup.sh                  set up and install
-#   ./setup.sh --no-provision   set up, but do not run the playbook yet
-#   ./setup.sh -e key=value     anything else goes to ansible-playbook (--tags jellyfin, --check, ...)
+#   ./setup.sh --no-provision   set up only
+#   ./setup.sh <options>        other options go to ansible-playbook (--tags jellyfin, --check, ...)
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -35,7 +32,7 @@ sudo -n true 2>/dev/null || sudo -v || fail "Your user needs sudo."
 
 if [ ! -f config/vault.yml ] && [ ! -f "$config_dir/vault.yml" ]; then
   [ -e config ] && fail "config/ has no vault.yml. Copy config.example/vault.yml there and fill it in."
-  echo "No configuration yet: a few questions first (copy config.example/ to $config_dir instead to do it by hand)."
+  echo "No configuration yet: a few questions first."
   CONFIG_DIR="$config_dir" ./init-config.sh
 fi
 [ -e config ] || ln -s "$config_dir" config
@@ -72,21 +69,20 @@ fi
 
 if [ "$provision" = false ]; then
   echo
-  echo "✅ Ready. Install everything: ./setup.sh   (or: .venv/bin/ansible-playbook provision.yml)"
+  echo "✅ Ready. Install: ./setup.sh"
   exit 0
 fi
 
-echo "== Installing the apps (10 to 20 minutes the first time)"
+echo "== Installing the apps"
 .venv/bin/ansible-playbook provision.yml "${playbook_args[@]}" ||
-  fail "The playbook stopped. Fix what it says above and run ./setup.sh again: everything done so far is kept."
+  fail "The playbook stopped. Fix what it says above and run ./setup.sh again."
 
 ip=$(hostname -I | awk '{print $1}')
 echo
-echo "✅ Done. Open Seerr at http://$ip:5055 to request a movie, and Jellyfin at http://$ip:8096 to watch."
-echo "   Log in with the user name and password you gave."
-echo "   Still yours to do:"
-echo "   - Keep the vault password (.vault_pass) and vault.yml outside this server, or the backups cannot be opened."
+echo "✅ Done. Seerr: http://$ip:5055, Jellyfin: http://$ip:8096"
+echo "   Still to do:"
+echo "   - Keep .vault_pass and vault.yml outside this server."
 if [ "$tailscale_wanted" = true ]; then
-  echo "   - Away from home: approve the server's route in the Tailscale admin console (README, Away from home)."
+  echo "   - Approve the server's route in the Tailscale admin console."
 fi
-[ -f config/indexers.yml ] || echo "   - Add the sites Prowlarr searches (config/indexers.yml, or in Prowlarr itself)."
+[ -f config/indexers.yml ] || echo "   - Add your indexers (config/indexers.yml)."
