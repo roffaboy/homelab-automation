@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 import unittest
+import unittest.mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "roles", "autodeploy", "files"))
 import homelab_common  # noqa: E402
@@ -212,6 +213,14 @@ class Backups(Case):
         self.assertIn(self.stack, backup)
         self.assertNotIn(f"{self.folder}/not-installed", backup)   # a stack that is not installed is skipped
         self.assertEqual([c[-1] for c in self.fake.ran("docker", "compose")], ["stop", "start"])
+
+    def test_the_next_stack_waits_until_the_started_one_is_healthy(self):
+        self.image_update()
+        ps = ("docker", "ps")
+        self.fake.answers[ps] = [(0, "Up 1 second (health: starting)")] * 2 + [(0, "Up 5 seconds (healthy)")]
+        with unittest.mock.patch("time.sleep") as sleep:
+            self.assertEqual(self.go(), 0)
+        self.assertEqual(sleep.call_count, 2)                   # two checks said "starting", then it went on
 
     def test_a_failed_backup_skips_the_update(self):
         self.image_update()
