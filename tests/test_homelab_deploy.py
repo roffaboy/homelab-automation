@@ -203,7 +203,7 @@ class Backups(Case):
         calls = self.fake.calls
         stop = next(i for i, c in enumerate(calls) if c[:2] == ("docker", "compose") and c[-1] == "stop")
         backup_at = next(i for i, c in enumerate(calls) if "backup" in c and "restic" in c)
-        start = next(i for i, c in enumerate(calls) if c[:2] == ("docker", "compose") and c[-1] == "start")
+        start = next(i for i, c in enumerate(calls) if c[:2] == ("docker", "compose") and "up" in c)
         self.assertLess(stop, backup_at)       # the apps are stopped while the data is copied
         self.assertLess(backup_at, start)
         backup = self.fake.ran(*RESTIC, "backup")[0]
@@ -211,7 +211,7 @@ class Backups(Case):
         self.assertIn("*/prometheus/data", backup)             # what is left out of every backup
         self.assertIn(self.stack, backup)
         self.assertNotIn(f"{self.folder}/not-installed", backup)   # a stack that is not installed is skipped
-        self.assertEqual([c[-1] for c in self.fake.ran("docker", "compose")], ["stop", "start"])
+        self.assertEqual([c[4] for c in self.fake.ran("docker", "compose")], ["stop", "up"])
 
     def test_a_failed_backup_skips_the_update(self):
         self.image_update()
@@ -220,7 +220,7 @@ class Backups(Case):
         self.assertEqual(self.go(), 1)
         self.assertEqual(self.playbook_runs(), [])
         self.assertEqual(git(self.repo, "rev-parse", "HEAD"), old)
-        self.assertEqual([c[-1] for c in self.fake.ran("docker", "compose")], ["stop", "start"])   # the apps run again
+        self.assertEqual([c[4] for c in self.fake.ran("docker", "compose")], ["stop", "up"])   # the apps run again
         self.assertTrue(self.said("Update skipped"))
         self.assertIsNotNone(homelab_common.State(self.state, self.repo).failed())
 

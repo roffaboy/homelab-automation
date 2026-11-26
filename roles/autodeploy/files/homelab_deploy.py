@@ -23,6 +23,9 @@ from homelab_common import State, Telegram, escape
 # Left out of every backup: Prometheus' measurements, and what the apps download again (Grafana's
 # plugins, Recyclarr's guides). Calibre-Web-Automated's zips of the books as they were imported are
 # copies of the library.
+# "start" waits for the health checks (the stacks go one by one, downloads first), so Sonarr does not
+# start while qBittorrent is still behind a VPN that is coming up. After 3 minutes it goes on anyway.
+ACTIONS = {"stop": ("stop",), "start": ("up", "-d", "--wait", "--wait-timeout", "180")}
 SKIP = ("prometheus/data", "grafana/data/plugins", "recyclarr/resources", "calibre/processed_books")
 RUNNING_PLAYBOOK = r"^[^ ]*python[^ ]* [^ ]*/ansible-playbook( |$)"
 
@@ -86,7 +89,7 @@ class Deploy:
 
     def compose(self, action):
         for stack in self.stacks:
-            self.run("docker", "compose", "--project-directory", stack, action)
+            self.run("docker", "compose", "--project-directory", stack, *ACTIONS[action])
 
     def restic(self, *args):
         return self.run("sudo", "--preserve-env=RESTIC_REPOSITORY,RESTIC_PASSWORD", "restic", *args)

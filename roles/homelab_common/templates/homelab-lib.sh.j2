@@ -17,7 +17,16 @@ skip=(prometheus/data grafana/data/plugins recyclarr/resources calibre/processed
 rsync_skip=() restic_skip=()
 for path in "${skip[@]}"; do rsync_skip+=(--exclude "$path"); restic_skip+=(--exclude "*/$path"); done
 
-compose() { for dir in "${stacks[@]}"; do docker compose --project-directory "$dir" "$1"; done; }
+# "start" waits for the health checks (the stacks go one by one, downloads first), so Sonarr does not start
+# while qBittorrent is still behind a VPN that is coming up. After 3 minutes it goes on anyway.
+compose() {
+  for dir in "${stacks[@]}"; do
+    case "$1" in
+      start) docker compose --project-directory "$dir" up -d --wait --wait-timeout 180 || true ;;
+      *) docker compose --project-directory "$dir" "$1" ;;
+    esac
+  done
+}
 
 # Messages are Telegram HTML: a bold first line with an icon, the details, then where to look.
 # Text that isn't markup goes through html first.
