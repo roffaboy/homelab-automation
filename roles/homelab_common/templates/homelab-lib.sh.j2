@@ -17,17 +17,14 @@ skip=(prometheus/data grafana/data/plugins recyclarr/resources calibre/processed
 rsync_skip=() restic_skip=()
 for path in "${skip[@]}"; do rsync_skip+=(--exclude "$path"); restic_skip+=(--exclude "*/$path"); done
 
-# Stacks start in order (downloads first). After each start, wait until its containers are through their
-# health check, so the next stack does not look for them too early (Sonarr then reports qBittorrent as
-# down). It gives up after three minutes: an app that stays unhealthy must not hold up the rest.
+# "start" waits for the health checks (the stacks go one by one, downloads first), so Sonarr does not start
+# while qBittorrent is still behind a VPN that is coming up. After 3 minutes it goes on anyway.
 compose() {
   for dir in "${stacks[@]}"; do
-    docker compose --project-directory "$dir" "$1"
-    [ "$1" = start ] || continue
-    for _ in $(seq 60); do
-      docker ps --filter "label=com.docker.compose.project.working_dir=$dir" --format '{{ '{{' }}.Status{{ '}}' }}' | grep -q 'health: starting' || break
-      sleep 3
-    done
+    case "$1" in
+      start) docker compose --project-directory "$dir" up -d --wait --wait-timeout 180 || true ;;
+      *) docker compose --project-directory "$dir" "$1" ;;
+    esac
   done
 }
 

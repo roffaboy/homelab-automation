@@ -23,6 +23,9 @@ from homelab_common import State, Telegram, escape
 # Left out of every backup: Prometheus' measurements, and what the apps download again (Grafana's
 # plugins, Recyclarr's guides). Calibre-Web-Automated's zips of the books as they were imported are
 # copies of the library.
+# "start" waits for the health checks (the stacks go one by one, downloads first), so Sonarr does not
+# start while qBittorrent is still behind a VPN that is coming up. After 3 minutes it goes on anyway.
+ACTIONS = {"stop": ("stop",), "start": ("up", "-d", "--wait", "--wait-timeout", "180")}
 SKIP = ("prometheus/data", "grafana/data/plugins", "recyclarr/resources", "calibre/processed_books")
 RUNNING_PLAYBOOK = r"^[^ ]*python[^ ]* [^ ]*/ansible-playbook( |$)"
 
@@ -86,21 +89,7 @@ class Deploy:
 
     def compose(self, action):
         for stack in self.stacks:
-            self.run("docker", "compose", "--project-directory", stack, action)
-            if action == "start":
-                self.wait_until_started(stack)
-
-    def wait_until_started(self, stack, seconds=180):
-        """Stacks start in order (downloads first); wait until its containers are through their health
-        check, so the next stack does not look for them too early (Sonarr then reports qBittorrent
-        as down). Gives up after `seconds`: an app that stays unhealthy must not hold up the rest."""
-        end = time.monotonic() + seconds
-        while time.monotonic() < end:
-            status = self.run("docker", "ps", "--filter", f"label=com.docker.compose.project.working_dir={stack}",
-                              "--format", "{{.Status}}")[1]
-            if "health: starting" not in status:
-                return
-            time.sleep(3)
+            self.run("docker", "compose", "--project-directory", stack, *ACTIONS[action])
 
     def restic(self, *args):
         return self.run("sudo", "--preserve-env=RESTIC_REPOSITORY,RESTIC_PASSWORD", "restic", *args)
