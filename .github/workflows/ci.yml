@@ -89,7 +89,7 @@ jobs:
       - uses: actions/checkout@v7
 
       # The way a new user starts (README): init-config.sh asks its questions (answered here from
-      # a pipe), then setup.sh installs Ansible and encrypts the vault with a new password.
+      # a pipe), then setup.sh installs Ansible, encrypts the vault with a new password and installs.
       # Every option on that the VM can run, so a release is tested whole; no Tailscale on the VM.
       - name: Test configuration
         run: |
@@ -107,11 +107,9 @@ jobs:
           SETTINGS
           cp config.example/maintainerr.yml config/   # the example rules are tested too
 
-      - name: Setup
-        run: ./setup.sh
-
-      - name: Fresh install
-        run: $PLAYBOOK
+      # The one command a new user runs: it installs Ansible, encrypts the vault and runs the playbook.
+      - name: Setup and fresh install
+        run: ./setup.sh -e homelab_ci=true
 
       - name: Second run changes nothing
         run: |
