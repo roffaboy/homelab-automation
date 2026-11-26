@@ -26,7 +26,6 @@ from homelab_common import State, Telegram, escape
 # "start" waits for the health checks (the stacks go one by one, downloads first), so Sonarr does not
 # start while qBittorrent is still behind a VPN that is coming up. After 3 minutes it goes on anyway.
 ACTIONS = {"stop": ("stop",), "start": ("up", "-d", "--wait", "--wait-timeout", "180")}
-SKIP = ("prometheus/data", "grafana/data/plugins", "recyclarr/resources", "calibre/processed_books")
 RUNNING_PLAYBOOK = r"^[^ ]*python[^ ]* [^ ]*/ansible-playbook( |$)"
 
 
@@ -74,6 +73,7 @@ class Deploy:
         stacks = [d for d in env["HOMELAB_STACK_DIRS"].split() if os.path.isdir(d)]
         books = os.path.join(env["HOMELAB_DATA_DIR"], "media", "books")
         self.stacks = stacks
+        self.skip = env["HOMELAB_BACKUP_SKIP"].split()   # the same list as the nightly backup's
         self.backup_dirs = stacks + ([books] if os.path.isdir(books) else [])
         self.started = time.monotonic()
 
@@ -165,7 +165,7 @@ class Deploy:
         if self.restic("cat", "config")[0]:
             self.restic("init")
         self.compose("stop")
-        excludes = [arg for path in SKIP for arg in ("--exclude", f"*/{path}")]
+        excludes = [arg for path in self.skip for arg in ("--exclude", f"*/{path}")]
         status = self.restic("backup", "--tag", "pre-deploy", *excludes, *self.backup_dirs)[0]
         self.compose("start")
         if status == 0:
@@ -177,7 +177,7 @@ class Deploy:
         self.compose("stop")
         directory = self.run("sudo", "mktemp", "-d")[1].strip()
         if self.restic("restore", "latest", "--tag", "pre-deploy", "--target", directory)[0] == 0:
-            excludes = [arg for path in SKIP for arg in ("--exclude", path)]
+            excludes = [arg for path in self.skip for arg in ("--exclude", path)]
             for backed_up in self.backup_dirs:
                 self.run("sudo", "rsync", "-a", "--delete", *excludes, f"{directory}{backed_up}/", f"{backed_up}/")
         self.run("sudo", "rm", "-rf", directory)

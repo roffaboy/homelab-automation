@@ -59,6 +59,14 @@ homelab_tailscale: true
 homelab_backup_remote: ""
 # Held by the nightly backup and the automatic deploys, so they never run at the same time.
 homelab_lock: /run/lock/homelab.lock
+# Left out of every backup, the nightly one and the one before a deploy: Prometheus' measurements, and
+# what the apps download again (Grafana's plugins, Recyclarr's guides). Calibre-Web-Automated's zips of
+# the books as they were imported are copies of the library. Paths inside the stacks.
+homelab_backup_skip:
+  - prometheus/data
+  - grafana/data/plugins
+  - recyclarr/resources
+  - calibre/processed_books
 # What the deploys, the Telegram bot and the playbook share: the hold on automatic deploys.
 homelab_state_dir: /var/lib/homelab
 # qBittorrent behind a WireGuard VPN, when there is a config/wg0.conf.

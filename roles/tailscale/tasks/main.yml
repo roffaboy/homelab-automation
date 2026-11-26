@@ -16,11 +16,11 @@
 
 # Subnet routing needs IP forwarding; Docker turns it on as well, this keeps it on after a reboot.
 - name: Keep IP forwarding on
-  ansible.builtin.copy:
-    content: "net.ipv4.ip_forward = 1\n"
-    dest: /etc/sysctl.d/99-tailscale.conf
-    mode: "0644"
-  notify: Apply IP forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_file: /etc/sysctl.d/99-tailscale.conf
+    reload: true
 
 - name: Read the Tailscale preferences
   ansible.builtin.command: tailscale debug prefs

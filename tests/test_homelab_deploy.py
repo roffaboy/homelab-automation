@@ -95,6 +95,7 @@ class Case(unittest.TestCase):
         clone(self.config_github, self.config)
         self.env = {"HOMELAB_REPO_DIR": self.repo, "HOMELAB_STATE_DIR": self.state, "HOMELAB_REPO_URL": "https://example.com/repo",
                     "HOMELAB_SSH_KEY": "/nonexistent", "HOMELAB_STACK_DIRS": f"{self.stack} {t}/not-installed",
+                    "HOMELAB_BACKUP_SKIP": "prometheus/data grafana/data/plugins",
                     "HOMELAB_DATA_DIR": f"{t}/data", "PATH": os.environ["PATH"], "HOME": t}
         self.fake, self.messages = Fake(), Messages()
         self.fake.answers[("pgrep",)] = (1, "")   # no playbook is running
@@ -208,7 +209,7 @@ class Backups(Case):
         self.assertLess(backup_at, start)
         backup = self.fake.ran(*RESTIC, "backup")[0]
         self.assertIn("pre-deploy", backup)
-        self.assertIn("*/prometheus/data", backup)             # what is left out of every backup
+        self.assertIn("*/prometheus/data", backup)             # what is left out of every backup (the list comes from the environment)
         self.assertIn(self.stack, backup)
         self.assertNotIn(f"{self.folder}/not-installed", backup)   # a stack that is not installed is skipped
         self.assertEqual([c[4] for c in self.fake.ran("docker", "compose")], ["stop", "up"])

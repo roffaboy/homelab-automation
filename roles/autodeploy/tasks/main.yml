@@ -22,9 +22,10 @@
     mode: "0700"
 
 - name: Create the deploy key
-  ansible.builtin.command: ssh-keygen -q -t ed25519 -N "" -C homelab-deploy -f {{ autodeploy_key }}
-  args:
-    creates: "{{ autodeploy_key }}"
+  community.crypto.openssh_keypair:
+    path: "{{ autodeploy_key }}"
+    type: ed25519
+    comment: homelab-deploy
   become: true
   become_user: "{{ homelab_user }}"
 
