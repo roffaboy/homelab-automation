@@ -10,10 +10,8 @@ for dir in {{ homelab_stack_dirs.values() | join(' ') }}; do [ -d "$dir" ] && st
 backup_dirs=("${stacks[@]}")
 [ -d {{ homelab_data_dir }}/media/books ] && backup_dirs+=({{ homelab_data_dir }}/media/books)
 
-# Left out of every backup: Prometheus' measurements, and what the apps download again (Grafana's
-# plugins, Recyclarr's guides). Calibre-Web-Automated's zips of the books as they were imported are
-# copies of the library. As arguments for rsync and for restic.
-skip=(prometheus/data grafana/data/plugins recyclarr/resources calibre/processed_books)
+# Left out of every backup (homelab_backup_skip), as arguments for rsync and for restic.
+skip=({{ homelab_backup_skip | join(' ') }})
 rsync_skip=() restic_skip=()
 for path in "${skip[@]}"; do rsync_skip+=(--exclude "$path"); restic_skip+=(--exclude "*/$path"); done
 
